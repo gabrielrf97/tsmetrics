@@ -1,6 +1,6 @@
-use serde::{Deserialize, Serialize};
+use serde::Serialize;
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize)]
 pub struct FunctionMetrics {
     pub name: String,
     pub file: String,
@@ -12,7 +12,7 @@ pub struct FunctionMetrics {
     pub param_count: usize,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize)]
 pub struct FileMetrics {
     pub path: String,
     pub total_loc: usize,
@@ -23,7 +23,7 @@ pub struct FileMetrics {
     pub functions: Vec<FunctionMetrics>,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize)]
 pub struct AnalysisResult {
     pub files: Vec<FileMetrics>,
     pub total_files: usize,

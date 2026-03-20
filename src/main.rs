@@ -29,7 +29,7 @@ enum Commands {
         #[arg(short, long, value_enum, default_value = "table")]
         format: Format,
 
-        /// Show verbose output
+        /// Show verbose output (skipped files will be reported to stderr)
         #[arg(short, long)]
         verbose: bool,
 
@@ -79,7 +79,7 @@ fn main() -> Result<()> {
 
             let mut result = analyze(&config)?;
 
-            // Apply filters
+            // Apply display filters.
             if min_complexity.is_some() || min_loc.is_some() {
                 for file in &mut result.files {
                     file.functions.retain(|f| {
@@ -89,11 +89,17 @@ fn main() -> Result<()> {
                         ok_complexity && ok_loc
                     });
                 }
+                // Recompute summary counts to match what will actually be displayed.
                 result.total_functions =
                     result.files.iter().map(|f| f.functions.len()).sum();
+                result.total_files = result
+                    .files
+                    .iter()
+                    .filter(|f| !f.functions.is_empty())
+                    .count();
             }
 
-            ts_static_analyzer::output::render(&result, &output_format);
+            ts_static_analyzer::output::render(&result, &output_format)?;
         }
     }
 

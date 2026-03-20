@@ -8,16 +8,38 @@ pub fn count_loc(node: Node, _source: &[u8]) -> usize {
 }
 
 /// Count significant lines of code (excluding blank lines and comment-only lines).
+///
+/// Uses a stateful scan to correctly handle multi-line `/* */` blocks even when
+/// body lines don't start with `*`.
 pub fn count_sloc(node: Node, source: &[u8]) -> usize {
     let start_byte = node.start_byte();
     let end_byte = node.end_byte();
     let snippet = &source[start_byte..end_byte];
     let text = std::str::from_utf8(snippet).unwrap_or("");
+    count_sloc_str(text)
+}
 
-    text.lines()
-        .filter(|line| {
-            let trimmed = line.trim();
-            !trimmed.is_empty() && !trimmed.starts_with("//") && !trimmed.starts_with("/*") && !trimmed.starts_with('*')
-        })
-        .count()
+/// Shared SLOC logic: stateful scan that correctly handles `/* ... */` blocks.
+pub fn count_sloc_str(text: &str) -> usize {
+    let mut in_block = false;
+    let mut count = 0;
+    for line in text.lines() {
+        let t = line.trim();
+        if in_block {
+            if t.contains("*/") {
+                in_block = false;
+            }
+            continue;
+        }
+        if t.starts_with("/*") {
+            if !t.contains("*/") {
+                in_block = true;
+            }
+            continue;
+        }
+        if !t.is_empty() && !t.starts_with("//") {
+            count += 1;
+        }
+    }
+    count
 }

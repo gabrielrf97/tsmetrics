@@ -1,7 +1,11 @@
 use tree_sitter::Node;
 
+const NESTED_FUNCTION_KINDS: &[&str] =
+    &["arrow_function", "function_expression", "function_declaration"];
+
 /// Calculate cyclomatic complexity for a function node.
 /// Starts at 1 and adds 1 for each decision point.
+/// Does NOT recurse into nested function nodes — their complexity is counted separately.
 pub fn cyclomatic_complexity(node: Node, source: &[u8]) -> usize {
     let mut complexity = 1;
     count_decision_points(node, source, &mut complexity);
@@ -10,8 +14,9 @@ pub fn cyclomatic_complexity(node: Node, source: &[u8]) -> usize {
 
 fn count_decision_points(node: Node, source: &[u8], count: &mut usize) {
     match node.kind() {
+        // `else_clause` is intentionally excluded: it is the complement of `if`, not an
+        // independent decision path. An if/else should produce CC=2, not CC=3.
         "if_statement"
-        | "else_clause"
         | "while_statement"
         | "do_statement"
         | "for_statement"
@@ -36,6 +41,10 @@ fn count_decision_points(node: Node, source: &[u8], count: &mut usize) {
 
     let mut cursor = node.walk();
     for child in node.children(&mut cursor) {
+        // Skip nested functions — they are collected and measured independently.
+        if NESTED_FUNCTION_KINDS.contains(&child.kind()) {
+            continue;
+        }
         count_decision_points(child, source, count);
     }
 }

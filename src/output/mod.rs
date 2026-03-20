@@ -1,13 +1,15 @@
 use crate::config::OutputFormat;
 use crate::structs::{AnalysisResult, FunctionMetrics};
+use anyhow::Result;
 use comfy_table::{presets::UTF8_FULL, Cell, Color, Table};
 
-pub fn render(result: &AnalysisResult, format: &OutputFormat) {
+pub fn render(result: &AnalysisResult, format: &OutputFormat) -> Result<()> {
     match format {
         OutputFormat::Table => render_table(result),
-        OutputFormat::Json => render_json(result),
+        OutputFormat::Json => render_json(result)?,
         OutputFormat::Csv => render_csv(result),
     }
+    Ok(())
 }
 
 fn render_table(result: &AnalysisResult) {
@@ -34,7 +36,8 @@ fn render_table(result: &AnalysisResult) {
         Cell::new("Params").fg(Color::Cyan),
     ]);
 
-    let all_functions: Vec<&FunctionMetrics> = result.files.iter().flat_map(|f| &f.functions).collect();
+    let all_functions: Vec<&FunctionMetrics> =
+        result.files.iter().flat_map(|f| &f.functions).collect();
 
     for func in all_functions {
         let complexity_cell = if func.cyclomatic_complexity >= 10 {
@@ -60,8 +63,9 @@ fn render_table(result: &AnalysisResult) {
     println!("{table}");
 }
 
-fn render_json(result: &AnalysisResult) {
-    println!("{}", serde_json::to_string_pretty(result).unwrap_or_default());
+fn render_json(result: &AnalysisResult) -> Result<()> {
+    println!("{}", serde_json::to_string_pretty(result)?);
+    Ok(())
 }
 
 fn render_csv(result: &AnalysisResult) {
@@ -70,15 +74,25 @@ fn render_csv(result: &AnalysisResult) {
         for func in &file.functions {
             println!(
                 "{},{},{},{},{},{},{},{}",
-                func.file,
-                func.name,
+                csv_field(&func.file),
+                csv_field(&func.name),
                 func.line,
                 func.loc,
                 func.sloc,
                 func.cyclomatic_complexity,
                 func.max_nesting,
-                func.param_count
+                func.param_count,
             );
         }
+    }
+}
+
+/// RFC 4180 CSV field quoting: wrap in double-quotes and escape internal quotes
+/// if the value contains a comma, double-quote, or newline.
+fn csv_field(s: &str) -> String {
+    if s.contains([',', '"', '\n', '\r']) {
+        format!("\"{}\"", s.replace('"', "\"\""))
+    } else {
+        s.to_string()
     }
 }

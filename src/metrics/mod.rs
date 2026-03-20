@@ -1,6 +1,7 @@
 pub mod function;
 
 use crate::structs::FileMetrics;
+use function::loc::count_sloc_str;
 use tree_sitter::Node;
 
 /// Count top-level import statements in a file.
@@ -36,14 +37,7 @@ fn count_nodes_of_kind(node: Node, kind: &str, count: &mut usize) {
 pub fn compute_file_metrics(root: Node, source: &[u8], path: &str) -> FileMetrics {
     let functions = function::extract_functions(root, source, path);
     let total_loc = root.end_position().row + 1;
-    let total_sloc = std::str::from_utf8(source)
-        .unwrap_or("")
-        .lines()
-        .filter(|l| {
-            let t = l.trim();
-            !t.is_empty() && !t.starts_with("//") && !t.starts_with("/*") && !t.starts_with('*')
-        })
-        .count();
+    let total_sloc = count_sloc_str(std::str::from_utf8(source).unwrap_or(""));
 
     FileMetrics {
         path: path.to_string(),

@@ -17,9 +17,12 @@ tree-sitter-typescript = "0.23"
 # CLI argument parsing
 clap = { version = "4.6", features = ["derive"] }
 
-# Serialization
-serde = { version = "1.0", features = ["derive"] }
-serde_json = "1.0"
+# Serialization — pinned to last known-safe versions before serde 1.0.220+
+# introduced `serde_core` and serde_json 1.0.140+ introduced `zmij`,
+# neither of which exist in the official upstream crate graphs.
+# Revisit after the upstream supply-chain incident is fully resolved.
+serde = { version = ">=1.0, <1.0.220", features = ["derive"] }
+serde_json = ">=1.0, <1.0.140"
 
 # Output formatting
 comfy-table = "7.2"
@@ -29,7 +32,6 @@ anyhow = "1.0"
 
 # File handling
 walkdir = "2.5"
-glob = "0.3"
 
 # Parallel processing
 rayon = "1.11"

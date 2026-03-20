@@ -48,17 +48,23 @@ fn collect_functions(node: Node, source: &[u8], file_path: &str, out: &mut Vec<F
 }
 
 fn extract_function_name(node: Node, source: &[u8]) -> String {
-    // method_definition has a name field
+    // function_declaration / method_definition have a direct `name` field.
     if let Some(name_node) = node.child_by_field_name("name") {
         return name_node.utf8_text(source).unwrap_or("<anonymous>").to_string();
     }
 
-    // function_declaration: look at parent for variable declarator
+    // For expressions assigned to variables, object keys, or class fields,
+    // look at the parent node for the name.
     if let Some(parent) = node.parent() {
-        if parent.kind() == "variable_declarator" {
-            if let Some(name_node) = parent.child_by_field_name("name") {
-                return name_node.utf8_text(source).unwrap_or("<anonymous>").to_string();
+        let name_field = match parent.kind() {
+            "variable_declarator" | "public_field_definition" | "assignment_expression" => {
+                parent.child_by_field_name("name")
             }
+            "pair" => parent.child_by_field_name("key"),
+            _ => None,
+        };
+        if let Some(n) = name_field {
+            return n.utf8_text(source).unwrap_or("<anonymous>").to_string();
         }
     }
 
