@@ -1,5 +1,16 @@
 use serde::Serialize;
 
+/// Per-class WMC (Weighted Methods per Class) metrics.
+#[derive(Debug, Clone, Serialize)]
+pub struct ClassMetrics {
+    pub name: String,
+    pub file: String,
+    pub line: usize,
+    pub method_count: usize,
+    /// Sum of cyclomatic complexities of all methods in the class.
+    pub wmc: usize,
+}
+
 #[derive(Debug, Clone, Serialize)]
 pub struct FunctionMetrics {
     pub name: String,
@@ -21,6 +32,7 @@ pub struct FileMetrics {
     pub class_count: usize,
     pub import_count: usize,
     pub functions: Vec<FunctionMetrics>,
+    pub classes: Vec<ClassMetrics>,
 }
 
 #[derive(Debug, Clone, Serialize)]
