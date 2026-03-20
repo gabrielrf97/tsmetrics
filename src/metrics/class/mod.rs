@@ -1,5 +1,8 @@
 pub mod dit;
 pub mod wmc;
+pub mod woc;
+
+pub use woc::{compute_class_woc, ClassWoc};
 
 use crate::structs::ClassMetrics;
 use tree_sitter::Node;
