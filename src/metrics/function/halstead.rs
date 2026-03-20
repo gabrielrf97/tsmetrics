@@ -145,7 +145,7 @@ pub struct FunctionHalstead {
 pub fn compute(source: &str) -> Vec<FunctionHalstead> {
     let mut parser = Parser::new();
     parser
-        .set_language(&tree_sitter_typescript::language_typescript())
+        .set_language(&tree_sitter_typescript::LANGUAGE_TYPESCRIPT.into())
         .expect("Error loading TypeScript grammar");
     let tree = parser.parse(source, None).expect("Failed to parse source");
     let mut results = Vec::new();
