@@ -1,0 +1,35 @@
+[package]
+name = "ts-static-analyzer"
+version = "0.1.0"
+edition = "2021"
+description = "TypeScript Static Analyzer - A static analysis tool for TypeScript using tree-sitter"
+license = "MIT"
+
+[[bin]]
+name = "ts-static-analyzer"
+path = "src/main.rs"
+
+[dependencies]
+# TypeScript parsing via tree-sitter
+tree-sitter = "0.24"
+tree-sitter-typescript = "0.23"
+
+# CLI argument parsing
+clap = { version = "4.6", features = ["derive"] }
+
+# Serialization
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+
+# Output formatting
+comfy-table = "7.2"
+
+# Error handling
+anyhow = "1.0"
+
+# File handling
+walkdir = "2.5"
+glob = "0.3"
+
+# Parallel processing
+rayon = "1.11"
