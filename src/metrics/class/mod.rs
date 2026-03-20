@@ -1,4 +1,5 @@
 pub mod dit;
+pub mod nom;
 pub mod wmc;
 pub mod woc;
 
