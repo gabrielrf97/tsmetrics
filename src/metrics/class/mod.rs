@@ -1,3 +1,4 @@
+pub mod dit;
 pub mod wmc;
 
 use crate::structs::ClassMetrics;
