@@ -1,3 +1,4 @@
+pub mod class;
 pub mod function;
 
 use crate::structs::FileMetrics;
@@ -36,6 +37,7 @@ fn count_nodes_of_kind(node: Node, kind: &str, count: &mut usize) {
 /// Compute all metrics for a parsed file.
 pub fn compute_file_metrics(root: Node, source: &[u8], path: &str) -> FileMetrics {
     let functions = function::extract_functions(root, source, path);
+    let classes = class::extract_classes(root, source, path);
     let total_loc = root.end_position().row + 1;
     let total_sloc = count_sloc_str(std::str::from_utf8(source).unwrap_or(""));
 
@@ -47,5 +49,6 @@ pub fn compute_file_metrics(root: Node, source: &[u8], path: &str) -> FileMetric
         class_count: count_classes(root),
         import_count: count_imports(root, source),
         functions,
+        classes,
     }
 }
