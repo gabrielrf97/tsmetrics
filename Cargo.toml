@@ -35,3 +35,6 @@ walkdir = "2.5"
 
 # Parallel processing
 rayon = "1.11"
+
+[dev-dependencies]
+approx = "0.5"

@@ -1,4 +1,5 @@
 pub mod cyclo;
+pub mod halstead;
 pub mod loc;
 pub mod nesting;
 pub mod params;
