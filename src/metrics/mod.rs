@@ -1,5 +1,6 @@
 pub mod class;
 pub mod function;
+pub mod react;
 
 use crate::structs::FileMetrics;
 use function::loc::count_sloc_str;
