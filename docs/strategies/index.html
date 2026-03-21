@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Code Smell Strategies — TSM Docs</title>
+<link rel="stylesheet" href="../style.css">
+</head>
+<body>
+<div class="layout">
+<nav class="sidebar">
+<div class="sidebar-header"><a href="../index.html" class="logo">TSM</a></div>
+<div class="nav-section">General</div>
+<a href="../index.html">Home</a>
+<a href="../getting-started.html">Getting Started</a>
+<a href="../configuration.html">Configuration</a>
+<a href="../cli.html">CLI Reference</a>
+<a href="../output-formats.html">Output Formats</a>
+<div class="nav-section">Metrics</div>
+<a href="../metrics/cyclomatic.html">Cyclomatic Complexity</a>
+<a href="../metrics/halstead.html">Halstead Volume</a>
+<a href="../metrics/maintainability.html">Maintainability Index</a>
+<a href="../metrics/wmc.html">WMC</a>
+<a href="../metrics/dit.html">DIT</a>
+<a href="../metrics/nom.html">NOM / NOAM / NOOM</a>
+<a href="../metrics/woc.html">WOC</a>
+<a href="../metrics/tcc.html">TCC</a>
+<a href="../metrics/cbo.html">CBO</a>
+<a href="../metrics/rfc.html">RFC</a>
+<a href="../metrics/noi.html">NOI</a>
+<a href="../metrics/used-components.html">Used Components</a>
+<a href="../metrics/jsx-nesting.html">JSX Nesting</a>
+<a href="../metrics/technical-debt.html">Technical Debt</a>
+<div class="nav-section">Strategies</div>
+<a href="../strategies/index.html" class="active">Overview</a>
+<a href="../strategies/god-class.html">God Class</a>
+<a href="../strategies/brain-method.html">Brain Method</a>
+<a href="../strategies/feature-envy.html">Feature Envy</a>
+<a href="../strategies/refused-bequest.html">Refused Bequest</a>
+
+</nav>
+<main class="content">
+<div class="breadcrumb"><a href="../index.html">Home</a> / Strategies</div>
+<a href="https://github.com/gabrielrf97/tsm/edit/main/docs/strategies/index.html" class="edit-link" target="_blank">Edit on GitHub</a>
+
+<h1>Code Smell Strategies</h1>
+<p>TSM's strategy engine applies multi-metric rules to flag well-known object-oriented code smells. Each strategy combines several low-level metrics into a single yes/no detection with an explanation of which thresholds triggered.</p>
+
+<table class="threshold-table">
+<thead>
+<tr>
+  <th>Strategy</th>
+  <th>Level</th>
+  <th>Detection Criteria</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+  <td><a href="god-class.html">God Class</a></td>
+  <td>Class</td>
+  <td>WMC &gt; 47 AND TCC &lt; 0.33 AND ATFD &gt; 5</td>
+</tr>
+<tr>
+  <td><a href="brain-method.html">Brain Method</a></td>
+  <td>Function</td>
+  <td>SLOC &gt; 65 AND CC &gt; 5 AND max_nesting &gt; 3</td>
+</tr>
+<tr>
+  <td><a href="feature-envy.html">Feature Envy</a></td>
+  <td>Function</td>
+  <td>ATFD &gt; 5 AND ATFD &gt; local_accesses</td>
+</tr>
+<tr>
+  <td><a href="refused-bequest.html">Refused Bequest</a></td>
+  <td>Class</td>
+  <td>DIT &gt; 0 AND override_ratio &lt; 0.33</td>
+</tr>
+</tbody>
+</table>
+
+<h2>How strategies appear in output</h2>
+<p>In the <strong>table</strong> format, violations are printed below the per-function metrics in a <em>Threshold Violations</em> section. In <strong>JSON</strong> output, each file record includes a <code>smells</code> array with the strategy name, entity, and triggering metric values.</p>
+
+<h2>When to use strategies</h2>
+<p>Strategies are always computed — you don't need to enable them. Focus your refactoring efforts on files where multiple strategies fire at once: a God Class that also contains Brain Methods is a prime candidate for decomposition.</p>
+
+<h2>All strategies</h2>
+<div class="feature-grid">
+<div class="feature-card">
+  <h3><a href="god-class.html">God Class</a></h3>
+  <p>A class that knows too much and does too much. Detected by high WMC, low cohesion (TCC), and excessive foreign data access (ATFD).</p>
+</div>
+<div class="feature-card">
+  <h3><a href="brain-method.html">Brain Method</a></h3>
+  <p>A single function that has become the "brain" of a component — too long, too complex, and too deeply nested to understand.</p>
+</div>
+<div class="feature-card">
+  <h3><a href="feature-envy.html">Feature Envy</a></h3>
+  <p>A method more interested in another class's data than its own. Detected when foreign data accesses outnumber local ones.</p>
+</div>
+<div class="feature-card">
+  <h3><a href="refused-bequest.html">Refused Bequest</a></h3>
+  <p>A subclass that inherits from a parent but overrides very little, suggesting the inheritance was the wrong design choice.</p>
+</div>
+</div>
+
+<div class="page-nav"><span></span><a href="god-class.html" class="next">God Class →</a></div>
+</main>
+</div>
+</body>
+</html>

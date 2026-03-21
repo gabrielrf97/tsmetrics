@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Cyclomatic Complexity — TSM Docs</title>
+  <link rel="stylesheet" href="../style.css">
+</head>
+<body>
+  <div class="layout">
+    
+    <aside class="sidebar">
+      <div class="sidebar-header">
+        <a href="../index.html" class="logo">TSM</a>
+        <p class="sidebar-subtitle">TypeScript Static Analyzer</p>
+      </div>
+      <nav class="sidebar-nav">
+        <div class="nav-section">
+          <div class="nav-section-title">Getting Started</div>
+          <a href="../index.html">Introduction</a>
+          <a href="../getting-started.html">Installation</a>
+          <a href="../configuration.html">Configuration</a>
+          <a href="../cli.html">CLI Reference</a>
+          <a href="../output-formats.html">Output Formats</a>
+        </div>
+        <div class="nav-section">
+          <div class="nav-section-title">Metrics</div>
+          <a href="../metrics/index.html">Overview</a>
+          <a href="../metrics/cyclomatic.html" class="active">Cyclomatic Complexity</a>
+          <a href="../metrics/halstead.html">Halstead Volume</a>
+          <a href="../metrics/maintainability.html">Maintainability Index</a>
+          <a href="../metrics/wmc.html">WMC</a>
+          <a href="../metrics/dit.html">DIT</a>
+          <a href="../metrics/nom.html">NOM / NOAM / NOOM</a>
+          <a href="../metrics/woc.html">WOC</a>
+          <a href="../metrics/tcc.html">TCC</a>
+          <a href="../metrics/cbo.html">CBO</a>
+          <a href="../metrics/rfc.html">RFC</a>
+          <a href="../metrics/noi.html">NOI</a>
+          <a href="../metrics/used-components.html">Used Components</a>
+          <a href="../metrics/jsx-nesting.html">JSX Nesting</a>
+          <a href="../metrics/technical-debt.html">Technical Debt</a>
+        </div>
+        <div class="nav-section">
+          <div class="nav-section-title">Strategies</div>
+          <a href="../strategies/index.html">Overview</a>
+          <a href="../strategies/god-class.html">God Class</a>
+          <a href="../strategies/brain-method.html">Brain Method</a>
+          <a href="../strategies/feature-envy.html">Feature Envy</a>
+          <a href="../strategies/refused-bequest.html">Refused Bequest</a>
+        </div>
+      </nav>
+    </aside>
+    <main class="content">
+
+      <div class="breadcrumb">
+        <a href="../index.html">Docs</a><span class="breadcrumb-sep">›</span>
+        <a href="index.html">Metrics</a><span class="breadcrumb-sep">›</span>
+        <span>Cyclomatic Complexity</span>
+      </div>
+      <div class="page-header">
+        <span class="badge badge-function">Function-level</span>
+        <h1>Cyclomatic Complexity</h1>
+        <p class="tagline">Counts the number of independent execution paths through a function.</p>
+      </div>
+
+      <h2>Formula</h2>
+      <div class="formula">
+CC = 1 + <span class="var">number of decision points</span>
+      </div>
+      <p>Where decision points are: <code>if</code>, <code>while</code>, <code>do…while</code>, <code>for</code>, <code>for…in</code>, <code>for…of</code>, <code>switch case</code>, <code>catch</code>, ternary expression, and binary <code>&amp;&amp;</code> / <code>||</code> / <code>??</code>.</p>
+
+      <h2>What it measures</h2>
+      <p>Cyclomatic Complexity (CC), introduced by Thomas McCabe in 1976, quantifies the structural complexity of a function by counting its independent execution paths. A function with no branching has CC = 1. Every additional decision point adds one more path.</p>
+      <p>Higher CC correlates with increased testing effort (you need at least as many test cases as CC to achieve full branch coverage) and higher likelihood of bugs.</p>
+
+      <h2>How it's calculated in TSM</h2>
+      <p>TSM walks the tree-sitter AST of the function body and counts these node kinds:</p>
+      <ul>
+        <li><code>if_statement</code> — +1 per <code>if</code> (the <code>else</code> branch is <em>not</em> counted — it's the complement, not a new path)</li>
+        <li><code>while_statement</code>, <code>do_statement</code> — +1</li>
+        <li><code>for_statement</code>, <code>for_in_statement</code> — +1</li>
+        <li><code>switch_case</code> — +1 per <code>case</code> label</li>
+        <li><code>catch_clause</code> — +1</li>
+        <li><code>ternary_expression</code> — +1</li>
+        <li><code>binary_expression</code> with operator <code>&amp;&amp;</code>, <code>||</code>, or <code>??</code> — +1</li>
+      </ul>
+      <p>Nested functions are <strong>not</strong> counted in the enclosing function — each function is its own unit.</p>
+
+      <h2>TypeScript example</h2>
+      <div class="code-block">
+        <div class="code-block-header">TypeScript</div>
+        <pre><span class="kw">function</span> <span class="fn">classify</span>(score: <span class="ty">number</span>): <span class="ty">string</span> {  <span class="cmt">// CC = 1</span>
+  <span class="kw">if</span> (score &gt;= <span class="num">90</span>) {                            <span class="cmt">// +1 → CC = 2</span>
+    <span class="kw">return</span> <span class="str">"A"</span>;
+  } <span class="kw">else if</span> (score &gt;= <span class="num">80</span>) {                    <span class="cmt">// +1 → CC = 3</span>
+    <span class="kw">return</span> <span class="str">"B"</span>;
+  } <span class="kw">else if</span> (score &gt;= <span class="num">70</span>) {                    <span class="cmt">// +1 → CC = 4</span>
+    <span class="kw">return</span> <span class="str">"C"</span>;
+  }
+  <span class="kw">return</span> score &gt;= <span class="num">60</span> ? <span class="str">"D"</span> : <span class="str">"F"</span>;              <span class="cmt">// +1 (ternary) → CC = 5</span>
+}</pre>
+      </div>
+
+      <h3>Expected output</h3>
+      <div class="output-block">File        Function   Line  LOC  SLOC  Complexity  Nesting  Params
+example.ts  classify      1    9     8           5        2       1</div>
+
+      <h2>Thresholds</h2>
+      <table class="threshold-table">
+        <thead><tr><th>Severity</th><th>Condition</th><th>Default value</th></tr></thead>
+        <tbody>
+          <tr><td><span class="sev-ok">OK</span></td><td>CC &lt; 10</td><td>—</td></tr>
+          <tr><td><span class="sev-warning">Warning</span></td><td>CC &ge; 10</td><td>10</td></tr>
+          <tr><td><span class="sev-error">Error</span></td><td>CC &ge; 25</td><td>25</td></tr>
+        </tbody>
+      </table>
+
+      <h2>Configuration</h2>
+      <div class="config-block">thresholds:
+  cyclomatic_complexity:
+    warning: 10   # default
+    error: 25     # default</div>
+
+      <h2>References</h2>
+      <ul>
+        <li>McCabe, T. J. (1976). A Complexity Measure. <em>IEEE Transactions on Software Engineering</em>, 2(4), 308–320.</li>
+        <li>Lanza, M. &amp; Marinescu, R. (2006). <em>Object-Oriented Metrics in Practice</em>. Springer.</li>
+      </ul>
+
+      <h2>Related metrics</h2>
+      <p>
+        <a href="halstead.html">Halstead Volume</a> ·
+        <a href="maintainability.html">Maintainability Index</a> ·
+        <a href="wmc.html">WMC</a> ·
+        <a href="../strategies/brain-method.html">Brain Method</a>
+      </p>
+
+      <div class="page-nav">
+        <a href="index.html" class="prev">
+          <span class="nav-dir">← Previous</span><span class="nav-title">Metrics Overview</span>
+        </a>
+        <a href="halstead.html" class="next">
+          <span class="nav-dir">Next</span><span class="nav-title">Halstead Volume →</span>
+        </a>
+      </div>
+      <a href="https://github.com/gabrielrf97/tsm/edit/main/docs/metrics/cyclomatic.html" class="edit-link">Edit on GitHub</a>
+
+    </main>
+  </div>
+</body>
+</html>

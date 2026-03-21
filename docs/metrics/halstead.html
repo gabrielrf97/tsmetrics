@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Halstead Volume — TSM Docs</title>
+  <link rel="stylesheet" href="../style.css">
+</head>
+<body>
+  <div class="layout">
+    
+    <aside class="sidebar">
+      <div class="sidebar-header">
+        <a href="../index.html" class="logo">TSM</a>
+        <p class="sidebar-subtitle">TypeScript Static Analyzer</p>
+      </div>
+      <nav class="sidebar-nav">
+        <div class="nav-section">
+          <div class="nav-section-title">Getting Started</div>
+          <a href="../index.html">Introduction</a>
+          <a href="../getting-started.html">Installation</a>
+          <a href="../configuration.html">Configuration</a>
+          <a href="../cli.html">CLI Reference</a>
+          <a href="../output-formats.html">Output Formats</a>
+        </div>
+        <div class="nav-section">
+          <div class="nav-section-title">Metrics</div>
+          <a href="../metrics/index.html">Overview</a>
+          <a href="../metrics/cyclomatic.html">Cyclomatic Complexity</a>
+          <a href="../metrics/halstead.html" class="active">Halstead Volume</a>
+          <a href="../metrics/maintainability.html">Maintainability Index</a>
+          <a href="../metrics/wmc.html">WMC</a>
+          <a href="../metrics/dit.html">DIT</a>
+          <a href="../metrics/nom.html">NOM / NOAM / NOOM</a>
+          <a href="../metrics/woc.html">WOC</a>
+          <a href="../metrics/tcc.html">TCC</a>
+          <a href="../metrics/cbo.html">CBO</a>
+          <a href="../metrics/rfc.html">RFC</a>
+          <a href="../metrics/noi.html">NOI</a>
+          <a href="../metrics/used-components.html">Used Components</a>
+          <a href="../metrics/jsx-nesting.html">JSX Nesting</a>
+          <a href="../metrics/technical-debt.html">Technical Debt</a>
+        </div>
+        <div class="nav-section">
+          <div class="nav-section-title">Strategies</div>
+          <a href="../strategies/index.html">Overview</a>
+          <a href="../strategies/god-class.html">God Class</a>
+          <a href="../strategies/brain-method.html">Brain Method</a>
+          <a href="../strategies/feature-envy.html">Feature Envy</a>
+          <a href="../strategies/refused-bequest.html">Refused Bequest</a>
+        </div>
+      </nav>
+    </aside>
+    <main class="content">
+
+      <div class="breadcrumb">
+        <a href="../index.html">Docs</a><span class="breadcrumb-sep">›</span>
+        <a href="index.html">Metrics</a><span class="breadcrumb-sep">›</span>
+        <span>Halstead Volume</span>
+      </div>
+      <div class="page-header">
+        <span class="badge badge-function">Function-level</span>
+        <h1>Halstead Volume</h1>
+        <p class="tagline">Measures the size of a function's implementation based on operator and operand token counts.</p>
+      </div>
+
+      <h2>Formula</h2>
+      <div class="formula">
+<span class="var">η₁</span> = distinct operators      <span class="var">η₂</span> = distinct operands
+<span class="var">N₁</span> = total operators         <span class="var">N₂</span> = total operands
+
+<span class="var">η</span>  = <span class="var">η₁</span> + <span class="var">η₂</span>            <span class="comment">(vocabulary)</span>
+<span class="var">N</span>  = <span class="var">N₁</span> + <span class="var">N₂</span>            <span class="comment">(program length)</span>
+<span class="var">V</span>  = <span class="var">N</span> × log₂(<span class="var">η</span>)       <span class="comment">(volume)</span>
+
+<span class="comment">Special case: V = 0 when η ≤ 1 (log₂ undefined)</span>
+      </div>
+
+      <h2>What it measures</h2>
+      <p>Halstead Volume (V), part of Maurice Halstead's 1977 software science metrics, quantifies the amount of information carried by a function. It combines the total token count (N) with the vocabulary richness (η) to produce a size estimate that is more meaningful than raw line counts.</p>
+      <p>A higher volume means the function carries more information, requires more mental effort to understand, and is more error-prone. Volume is also used to compute the <a href="maintainability.html">Maintainability Index</a> and <a href="technical-debt.html">Technical Debt</a>.</p>
+
+      <h2>How it's calculated in TSM</h2>
+      <p>TSM classifies every AST leaf node as either an <strong>operator</strong> or an <strong>operand</strong>:</p>
+
+      <h3>Operators (anonymous leaf tokens)</h3>
+      <p>Arithmetic: <code>+</code> <code>-</code> <code>*</code> <code>/</code> <code>%</code> <code>**</code> · Comparison: <code>===</code> <code>!==</code> <code>&lt;</code> <code>&gt;</code> etc. · Logical: <code>&amp;&amp;</code> <code>||</code> <code>??</code> <code>!</code> · Assignment: <code>=</code> <code>+=</code> etc. · Keyword operators: <code>if</code> <code>return</code> <code>new</code> <code>typeof</code> <code>await</code> <code>yield</code> <code>throw</code> · Member access: <code>.</code> <code>?.</code> · Arrow: <code>=&gt;</code> · Spread: <code>...</code></p>
+
+      <h3>Operands (named AST nodes)</h3>
+      <p><code>identifier</code>, <code>property_identifier</code>, <code>this</code>, <code>super</code>, <code>number</code>, <code>string</code>, <code>template_string</code>, <code>true</code>, <code>false</code>, <code>null</code>, <code>regex</code></p>
+
+      <p>Structural punctuation (<code>(</code> <code>)</code> <code>{</code> <code>}</code> <code>,</code> <code>;</code>) is <strong>ignored</strong>.</p>
+      <p>Nested functions are their own units — their tokens do not contribute to the enclosing function.</p>
+
+      <h2>TypeScript example</h2>
+      <div class="code-block">
+        <div class="code-block-header">TypeScript</div>
+        <pre><span class="kw">function</span> <span class="fn">add</span>(a: <span class="ty">number</span>, b: <span class="ty">number</span>): <span class="ty">number</span> {
+  <span class="kw">return</span> a + b;
+}
+<span class="cmt">// Operators: return(×1), +(×1)  → η₁=2, N₁=2
+// Operands:  add(×1), a(×2), b(×2)  → η₂=3, N₂=5
+// η=5, N=7, V = 7 × log₂(5) ≈ 16.25</span></pre>
+      </div>
+
+      <h3>Expected output</h3>
+      <div class="output-block">Function: add
+  distinct_operators: 2   (return, +)
+  distinct_operands:  3   (add, a, b)
+  total_operators:    2
+  total_operands:     5
+  vocabulary (η):     5
+  length (N):         7
+  volume (V):         16.25</div>
+
+      <h2>Thresholds</h2>
+      <p>Halstead Volume has no configurable violation thresholds. It is used as an input to <a href="maintainability.html">Maintainability Index</a> and <a href="technical-debt.html">Technical Debt</a> and included in JSON output.</p>
+
+      <h2>References</h2>
+      <ul>
+        <li>Halstead, M. H. (1977). <em>Elements of Software Science</em>. Elsevier.</li>
+        <li>Lanza, M. &amp; Marinescu, R. (2006). <em>Object-Oriented Metrics in Practice</em>. Springer.</li>
+      </ul>
+
+      <h2>Related metrics</h2>
+      <p>
+        <a href="cyclomatic.html">Cyclomatic Complexity</a> ·
+        <a href="maintainability.html">Maintainability Index</a> ·
+        <a href="technical-debt.html">Technical Debt</a>
+      </p>
+
+      <div class="page-nav">
+        <a href="cyclomatic.html" class="prev">
+          <span class="nav-dir">← Previous</span><span class="nav-title">Cyclomatic Complexity</span>
+        </a>
+        <a href="maintainability.html" class="next">
+          <span class="nav-dir">Next</span><span class="nav-title">Maintainability Index →</span>
+        </a>
+      </div>
+      <a href="https://github.com/gabrielrf97/tsm/edit/main/docs/metrics/halstead.html" class="edit-link">Edit on GitHub</a>
+
+    </main>
+  </div>
+</body>
+</html>

@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Refused Bequest — TSM Docs</title>
+<link rel="stylesheet" href="../style.css">
+</head>
+<body>
+<div class="layout">
+<nav class="sidebar">
+<div class="sidebar-header"><a href="../index.html" class="logo">TSM</a></div>
+<div class="nav-section">General</div>
+<a href="../index.html">Home</a>
+<a href="../getting-started.html">Getting Started</a>
+<a href="../configuration.html">Configuration</a>
+<a href="../cli.html">CLI Reference</a>
+<a href="../output-formats.html">Output Formats</a>
+<div class="nav-section">Metrics</div>
+<a href="../metrics/cyclomatic.html">Cyclomatic Complexity</a>
+<a href="../metrics/halstead.html">Halstead Volume</a>
+<a href="../metrics/maintainability.html">Maintainability Index</a>
+<a href="../metrics/wmc.html">WMC</a>
+<a href="../metrics/dit.html">DIT</a>
+<a href="../metrics/nom.html">NOM / NOAM / NOOM</a>
+<a href="../metrics/woc.html">WOC</a>
+<a href="../metrics/tcc.html">TCC</a>
+<a href="../metrics/cbo.html">CBO</a>
+<a href="../metrics/rfc.html">RFC</a>
+<a href="../metrics/noi.html">NOI</a>
+<a href="../metrics/used-components.html">Used Components</a>
+<a href="../metrics/jsx-nesting.html">JSX Nesting</a>
+<a href="../metrics/technical-debt.html">Technical Debt</a>
+<div class="nav-section">Strategies</div>
+<a href="../strategies/index.html">Overview</a>
+<a href="../strategies/god-class.html">God Class</a>
+<a href="../strategies/brain-method.html">Brain Method</a>
+<a href="../strategies/feature-envy.html">Feature Envy</a>
+<a href="../strategies/refused-bequest.html" class="active">Refused Bequest</a>
+
+</nav>
+<main class="content">
+<div class="breadcrumb"><a href="../index.html">Home</a> / <a href="index.html">Strategies</a> / Refused Bequest</div>
+<a href="https://github.com/gabrielrf97/tsm/edit/main/docs/strategies/refused-bequest.html" class="edit-link" target="_blank">Edit on GitHub</a>
+
+<h1>Refused Bequest</h1>
+<p class="badge">Class Strategy &nbsp;|&nbsp; Multi-metric</p>
+<p>A subclass that inherits from a parent but overrides very few of its methods — "refusing" the behaviour bequeathed by the parent. This often signals that the subclass should not be a subclass at all (prefer composition over inheritance).</p>
+
+<h2>Detection Rule</h2>
+<div class="detection-rule">
+DIT &gt; 0 AND override_ratio &lt; 0.33
+</div>
+<div class="formula">override_ratio = (NOOM + implicit_overrides) / NOM</div>
+<table class="threshold-table">
+<thead><tr><th>Term</th><th>Definition</th></tr></thead>
+<tbody>
+<tr><td>DIT &gt; 0</td><td>Class has at least one parent (is a subclass)</td></tr>
+<tr><td>override_ratio &lt; 0.33</td><td>Less than a third of its methods override the parent</td></tr>
+<tr><td>NOOM</td><td>Methods with the explicit <code>override</code> keyword</td></tr>
+<tr><td>implicit_overrides</td><td>Concrete methods whose names match an abstract method in the parent</td></tr>
+<tr><td>NOM</td><td>Total concrete methods in the subclass</td></tr>
+</tbody>
+</table>
+
+<h2>TypeScript Example</h2>
+<pre><code><span class="kw">abstract class</span> <span class="ty">BaseRepository</span>&lt;T&gt; {
+  <span class="kw">abstract</span> <span class="fn">findById</span>(id: <span class="ty">string</span>): <span class="ty">Promise</span>&lt;T&gt;;
+  <span class="kw">abstract</span> <span class="fn">save</span>(entity: T): <span class="ty">Promise</span>&lt;<span class="ty">void</span>&gt;;
+  <span class="kw">abstract</span> <span class="fn">delete</span>(id: <span class="ty">string</span>): <span class="ty">Promise</span>&lt;<span class="ty">void</span>&gt;;
+}
+
+<span class="kw">class</span> <span class="ty">UserReportService</span> <span class="kw">extends</span> <span class="ty">BaseRepository</span>&lt;<span class="ty">User</span>&gt; {
+  <span class="fn">findById</span>(id: <span class="ty">string</span>) { ... }  <span class="cmt">// implicit override +1</span>
+  <span class="fn">save</span>(u: <span class="ty">User</span>)        { ... }  <span class="cmt">// implicit override +1</span>
+  <span class="fn">delete</span>(id: <span class="ty">string</span>)  { ... }  <span class="cmt">// implicit override +1</span>
+  <span class="fn">generatePdf</span>()        { ... }  <span class="cmt">// added method</span>
+  <span class="fn">emailReport</span>()        { ... }  <span class="cmt">// added method</span>
+  <span class="fn">scheduleReport</span>()     { ... }  <span class="cmt">// added method</span>
+  <span class="fn">buildQuery</span>()         { ... }  <span class="cmt">// added method</span>
+  <span class="fn">formatRows</span>()         { ... }  <span class="cmt">// added method</span>
+}
+<span class="cmt">// NOM=8, overrides=3 → ratio=0.375 (borderline)</span>
+
+<span class="kw">class</span> <span class="ty">UserCacheService</span> <span class="kw">extends</span> <span class="ty">BaseRepository</span>&lt;<span class="ty">User</span>&gt; {
+  <span class="fn">findById</span>(id: <span class="ty">string</span>) { ... }  <span class="cmt">// implicit override +1</span>
+  <span class="cmt">// save/delete not implemented (not abstract-forced in TS)</span>
+  <span class="fn">warmCache</span>()    { ... }
+  <span class="fn">invalidate</span>()   { ... }
+  <span class="fn">getStats</span>()     { ... }
+  <span class="fn">prefetchUser</span>() { ... }
+  <span class="fn">prefetchAll</span>()  { ... }
+}
+<span class="cmt">// NOM=6, overrides=1 → ratio=0.167 &lt; 0.33 🚨 Refused Bequest</span>
+</code></pre>
+
+<h2>Remediation</h2>
+<ul>
+<li><strong>Replace inheritance with composition</strong> — the subclass probably wants to <em>use</em> the parent, not <em>be</em> the parent.</li>
+<li><strong>Extract interface</strong> — if only partial behaviour is needed, implement a narrower interface instead of extending the full base class.</li>
+<li><strong>Push down inheritance</strong> — if some subclasses do use the parent, leave them; move the refusing subclass out of the hierarchy.</li>
+</ul>
+
+<h2>Related strategies</h2>
+<p><a href="god-class.html">God Class</a> · <a href="brain-method.html">Brain Method</a></p>
+<h2>Related metrics</h2>
+<p><a href="../metrics/dit.html">DIT</a> · <a href="../metrics/nom.html">NOM / NOAM / NOOM</a> · <a href="../metrics/wmc.html">WMC</a></p>
+
+<div class="page-nav"><a href="feature-envy.html" class="prev">← Feature Envy</a></div>
+</main>
+</div>
+</body>
+</html>

@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>DIT — TSM Docs</title>
+  <link rel="stylesheet" href="../style.css">
+</head>
+<body>
+  <div class="layout">
+    <aside class="sidebar">
+      <div class="sidebar-header">
+        <a href="../index.html" class="logo">TSM</a>
+        <p class="sidebar-subtitle">TypeScript Static Analyzer</p>
+      </div>
+      <nav class="sidebar-nav">
+        <div class="nav-section">
+          <div class="nav-section-title">Getting Started</div>
+          <a href="../index.html">Introduction</a>
+          <a href="../getting-started.html">Installation</a>
+          <a href="../configuration.html">Configuration</a>
+          <a href="../cli.html">CLI Reference</a>
+          <a href="../output-formats.html">Output Formats</a>
+        </div>
+        <div class="nav-section">
+          <div class="nav-section-title">Metrics</div>
+          <a href="index.html">Overview</a>
+          <a href="cyclomatic.html">Cyclomatic Complexity</a>
+          <a href="halstead.html">Halstead Volume</a>
+          <a href="maintainability.html">Maintainability Index</a>
+          <a href="wmc.html">WMC</a>
+          <a href="dit.html" class="active">DIT</a>
+          <a href="nom.html">NOM / NOAM / NOOM</a>
+          <a href="woc.html">WOC</a>
+          <a href="tcc.html">TCC</a>
+          <a href="cbo.html">CBO</a>
+          <a href="rfc.html">RFC</a>
+          <a href="noi.html">NOI</a>
+          <a href="used-components.html">Used Components</a>
+          <a href="jsx-nesting.html">JSX Nesting</a>
+          <a href="technical-debt.html">Technical Debt</a>
+        </div>
+        <div class="nav-section">
+          <div class="nav-section-title">Strategies</div>
+          <a href="../strategies/index.html">Overview</a>
+          <a href="../strategies/god-class.html">God Class</a>
+          <a href="../strategies/brain-method.html">Brain Method</a>
+          <a href="../strategies/feature-envy.html">Feature Envy</a>
+          <a href="../strategies/refused-bequest.html">Refused Bequest</a>
+        </div>
+      </nav>
+    </aside>
+    <main class="content">
+
+      <div class="breadcrumb">
+        <a href="../index.html">Docs</a>
+        <span class="breadcrumb-sep">›</span>
+        <a href="index.html">Metrics</a>
+        <span class="breadcrumb-sep">›</span>
+        <span>DIT</span>
+      </div>
+      <div class="page-header">
+        <h1>Depth of Inheritance Tree</h1>
+        <p class="tagline">The number of edges from a class to the root of its inheritance hierarchy.</p>
+      </div>
+
+      <span class="badge badge-class">Class-level</span>
+
+      <h2>Overview</h2>
+      <p>
+        Depth of Inheritance Tree (DIT) measures how far down a class sits in the inheritance
+        hierarchy. A class with no <code>extends</code> clause has DIT = 0. A class that directly
+        extends another class has DIT = 1. Each additional level of inheritance adds 1.
+      </p>
+      <p>
+        Deeper inheritance chains mean a class potentially inherits more behaviour from ancestors,
+        making it harder to predict the class's full behaviour and increasing the chance that
+        changes to ancestors break descendants.
+      </p>
+
+      <h2>Formula</h2>
+      <div class="formula">
+        DIT(<span class="var">C</span>) =
+          <span class="num">0</span>                           &nbsp;&nbsp; if <span class="var">C</span> has no parent<br>
+        DIT(<span class="var">C</span>) =
+          <span class="num">1</span> + DIT(<span class="var">parent</span>)    &nbsp;&nbsp; otherwise
+      </div>
+
+      <h2>How TSM computes DIT</h2>
+      <p>
+        TSM resolves the full chain within the analyzed files using memoized recursive lookup.
+        Cycle detection prevents infinite loops in the rare case of circular declarations.
+      </p>
+      <p>
+        When a parent class is defined <strong>outside the analyzed files</strong> (e.g. a
+        third-party library or a built-in like <code>Error</code>), TSM treats that parent as the
+        root of the hierarchy. The child class therefore has DIT = 1, not 0, reflecting that it
+        does inherit from something even if the depth cannot be fully resolved.
+      </p>
+
+      <h2>Interpretation</h2>
+      <table class="threshold-table">
+        <thead>
+          <tr><th>DIT</th><th>Interpretation</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>0</td><td>No inheritance — standalone class</td></tr>
+          <tr><td>1 – 2</td><td>Shallow hierarchy — generally well-structured</td></tr>
+          <tr><td>3 – 4</td><td>Moderate depth — review for excessive coupling</td></tr>
+          <tr><td>5+</td><td>Deep hierarchy — consider flattening or using composition</td></tr>
+        </tbody>
+      </table>
+
+      <h2>Thresholds</h2>
+      <p>DIT is an <strong>informational metric</strong> with no default warning or error thresholds. It is not configurable via <code>tsm.yaml</code>.</p>
+
+      <h2>Example</h2>
+      <div class="code-block">
+        <div class="code-block-header">TypeScript</div>
+        <pre><span class="kw">class</span> <span class="cl">Animal</span> {}                       <span class="cmt">// DIT = 0</span>
+<span class="kw">class</span> <span class="cl">Mammal</span> <span class="kw">extends</span> <span class="cl">Animal</span> {}         <span class="cmt">// DIT = 1</span>
+<span class="kw">class</span> <span class="cl">Dog</span> <span class="kw">extends</span> <span class="cl">Mammal</span> {}            <span class="cmt">// DIT = 2</span>
+<span class="kw">class</span> <span class="cl">Labrador</span> <span class="kw">extends</span> <span class="cl">Dog</span> {}          <span class="cmt">// DIT = 3</span>
+
+<span class="cmt">// External parent — treated as root</span>
+<span class="kw">class</span> <span class="cl">AppError</span> <span class="kw">extends</span> Error {}         <span class="cmt">// DIT = 1</span></pre>
+      </div>
+
+      <h2>Usage in detection strategies</h2>
+      <ul>
+        <li>
+          <a href="../strategies/refused-bequest.html">Refused Bequest</a> — DIT &gt; 0 is a
+          precondition (the class must actually inherit from somewhere)
+        </li>
+      </ul>
+
+      <h2>JSON field</h2>
+      <p>In JSON output, the field is named <code>dit</code> on each class record.</p>
+
+      <h2>References</h2>
+      <ul>
+        <li>Chidamber, S. R. &amp; Kemerer, C. F. (1994). <em>A Metrics Suite for Object Oriented Design.</em> IEEE Transactions on Software Engineering.</li>
+      </ul>
+
+      <div class="page-nav">
+        <a href="wmc.html" class="prev">
+          <span class="nav-dir">← Previous</span>
+          <span class="nav-title">WMC</span>
+        </a>
+        <a href="nom.html" class="next">
+          <span class="nav-dir">Next</span>
+          <span class="nav-title">NOM / NOAM / NOOM →</span>
+        </a>
+      </div>
+      <a href="https://github.com/gabrielrf97/tsm/edit/main/docs/metrics/dit.html" class="edit-link">Edit on GitHub</a>
+
+    </main>
+  </div>
+</body>
+</html>

@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>WOC — Weight of Class — TSM Docs</title>
+<link rel="stylesheet" href="../style.css">
+</head>
+<body>
+<div class="layout">
+<nav class="sidebar">
+<div class="sidebar-header"><a href="../index.html" class="logo">TSM</a></div>
+<a href="../index.html">Home</a>
+<a href="../getting-started.html">Getting Started</a>
+<a href="../configuration.html">Configuration</a>
+<a href="../cli.html">CLI Reference</a>
+<a href="../output-formats.html">Output Formats</a>
+<div class="nav-section">Metrics</div>
+<a href="../metrics/cyclomatic.html">Cyclomatic Complexity</a>
+<a href="../metrics/halstead.html">Halstead Volume</a>
+<a href="../metrics/maintainability.html">Maintainability Index</a>
+<a href="../metrics/wmc.html">WMC</a>
+<a href="../metrics/dit.html">DIT</a>
+<a href="../metrics/nom.html">NOM / NOAM / NOOM</a>
+<a href="../metrics/woc.html" class="active">WOC</a>
+<a href="../metrics/tcc.html">TCC</a>
+<a href="../metrics/cbo.html">CBO</a>
+<a href="../metrics/rfc.html">RFC</a>
+<a href="../metrics/noi.html">NOI</a>
+<a href="../metrics/used-components.html">Used Components</a>
+<a href="../metrics/jsx-nesting.html">JSX Nesting</a>
+<a href="../metrics/technical-debt.html">Technical Debt</a>
+<div class="nav-section">Strategies</div>
+<a href="../strategies/index.html">Overview</a>
+<a href="../strategies/god-class.html">God Class</a>
+<a href="../strategies/brain-method.html">Brain Method</a>
+<a href="../strategies/feature-envy.html">Feature Envy</a>
+<a href="../strategies/refused-bequest.html">Refused Bequest</a>
+
+</nav>
+<main class="content">
+<div class="breadcrumb"><a href="../index.html">Home</a> / <a href="index.html">Metrics</a> / WOC</div>
+<a href="https://github.com/gabrielrf97/tsm/edit/main/docs/metrics/woc.html" class="edit-link" target="_blank">Edit on GitHub</a>
+
+<h1>WOC — Weight of Class</h1>
+<p class="badge">Class Metric &nbsp;|&nbsp; AST-based</p>
+<p>The ratio of <em>public attributes</em> to all public members (attributes + methods). Values near 1 indicate a data-container class; values near 0 indicate a behaviour-heavy class.</p>
+
+<h2>Formula</h2>
+<div class="formula">WOC = public_attributes / (public_attributes + public_methods)</div>
+<p>Result is in <strong>[0, 1]</strong>. Returns 0 when the class has no public members.</p>
+
+<h2>Visibility rules</h2>
+<p>A member is <em>public</em> when:</p>
+<ul>
+<li>It has an explicit <code>public</code> modifier, <strong>or</strong></li>
+<li>It has <em>no</em> accessibility modifier at all (TypeScript default is public).</li>
+</ul>
+<p>Members with <code>private</code>, <code>protected</code>, <code>#</code> (private field), or <code>readonly</code>-only are excluded.</p>
+
+<h2>TypeScript Example</h2>
+<pre><code><span class="kw">class</span> <span class="ty">Config</span> {
+  <span class="kw">public</span> host: <span class="ty">string</span>;        <span class="cmt">// public attr</span>
+  <span class="kw">public</span> port: <span class="ty">number</span>;        <span class="cmt">// public attr</span>
+  <span class="kw">private</span> secret: <span class="ty">string</span>;    <span class="cmt">// excluded</span>
+  <span class="fn">getUrl</span>(): <span class="ty">string</span> { ... }    <span class="cmt">// public method</span>
+}
+<span class="cmt">// public_attrs=2, public_methods=1 → WOC = 2/3 ≈ 0.67</span>
+</code></pre>
+
+<h2>Thresholds</h2>
+<p>WOC is informational — it is not threshold-checked directly. It feeds the <strong>God Class</strong> strategy (high WMC + low TCC + high ATFD).</p>
+
+<h2>Related metrics</h2>
+<p><a href="wmc.html">WMC</a> · <a href="tcc.html">TCC</a> · <a href="nom.html">NOM</a> · <a href="../strategies/god-class.html">God Class strategy</a></p>
+
+<div class="page-nav"><a href="nom.html" class="prev">← NOM</a><a href="tcc.html" class="next">TCC →</a></div>
+</main>
+</div>
+</body>
+</html>

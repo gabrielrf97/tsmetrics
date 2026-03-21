@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Brain Method — TSM Docs</title>
+<link rel="stylesheet" href="../style.css">
+</head>
+<body>
+<div class="layout">
+<nav class="sidebar">
+<div class="sidebar-header"><a href="../index.html" class="logo">TSM</a></div>
+<div class="nav-section">General</div>
+<a href="../index.html">Home</a>
+<a href="../getting-started.html">Getting Started</a>
+<a href="../configuration.html">Configuration</a>
+<a href="../cli.html">CLI Reference</a>
+<a href="../output-formats.html">Output Formats</a>
+<div class="nav-section">Metrics</div>
+<a href="../metrics/cyclomatic.html">Cyclomatic Complexity</a>
+<a href="../metrics/halstead.html">Halstead Volume</a>
+<a href="../metrics/maintainability.html">Maintainability Index</a>
+<a href="../metrics/wmc.html">WMC</a>
+<a href="../metrics/dit.html">DIT</a>
+<a href="../metrics/nom.html">NOM / NOAM / NOOM</a>
+<a href="../metrics/woc.html">WOC</a>
+<a href="../metrics/tcc.html">TCC</a>
+<a href="../metrics/cbo.html">CBO</a>
+<a href="../metrics/rfc.html">RFC</a>
+<a href="../metrics/noi.html">NOI</a>
+<a href="../metrics/used-components.html">Used Components</a>
+<a href="../metrics/jsx-nesting.html">JSX Nesting</a>
+<a href="../metrics/technical-debt.html">Technical Debt</a>
+<div class="nav-section">Strategies</div>
+<a href="../strategies/index.html">Overview</a>
+<a href="../strategies/god-class.html">God Class</a>
+<a href="../strategies/brain-method.html" class="active">Brain Method</a>
+<a href="../strategies/feature-envy.html">Feature Envy</a>
+<a href="../strategies/refused-bequest.html">Refused Bequest</a>
+
+</nav>
+<main class="content">
+<div class="breadcrumb"><a href="../index.html">Home</a> / <a href="index.html">Strategies</a> / Brain Method</div>
+<a href="https://github.com/gabrielrf97/tsm/edit/main/docs/strategies/brain-method.html" class="edit-link" target="_blank">Edit on GitHub</a>
+
+<h1>Brain Method</h1>
+<p class="badge">Function Strategy &nbsp;|&nbsp; Multi-metric</p>
+<p>A function that has become the cognitive centre of a component — too long to skim, too complex to reason about, and too deeply nested to modify safely.</p>
+
+<h2>Detection Rule</h2>
+<div class="detection-rule">
+SLOC &gt; 65 AND CC &gt; 5 AND max_nesting &gt; 3
+</div>
+<table class="threshold-table">
+<thead><tr><th>Metric</th><th>Threshold</th><th>Meaning when exceeded</th></tr></thead>
+<tbody>
+<tr><td><a href="../metrics/cyclomatic.html">CC</a></td><td>&gt; 5</td><td>Multiple independent code paths — non-trivial logic</td></tr>
+<tr><td>SLOC</td><td>&gt; 65</td><td>Too long to read in a single glance</td></tr>
+<tr><td>max_nesting</td><td>&gt; 3</td><td>Deeply nested control flow — hard to follow mental stack</td></tr>
+</tbody>
+</table>
+
+<p><strong>Note:</strong> The nesting metric here uses <code>max_nesting</code> (maximum control-flow depth), and the length uses <strong>SLOC</strong> (source lines of code — blank lines and comments excluded), not raw LOC.</p>
+
+<h2>TypeScript Example</h2>
+<pre><code><span class="kw">function</span> <span class="fn">processPayment</span>(req: <span class="ty">PaymentRequest</span>): <span class="ty">PaymentResult</span> {
+  <span class="cmt">// 80 SLOC, CC=9, max_nesting=5 → Brain Method</span>
+  <span class="kw">if</span> (req.type === <span class="str">"card"</span>) {
+    <span class="kw">for</span> (<span class="kw">const</span> item <span class="kw">of</span> req.items) {
+      <span class="kw">if</span> (item.taxable) {
+        <span class="kw">if</span> (item.country === <span class="str">"US"</span>) {
+          <span class="kw">if</span> (item.state === <span class="str">"CA"</span>) {
+            <span class="cmt">// depth 5 ← exceeds threshold</span>
+          }
+        }
+      }
+    }
+  }
+  <span class="cmt">// ... 60 more lines</span>
+}
+</code></pre>
+
+<h2>Remediation</h2>
+<ul>
+<li><strong>Extract Method</strong> — pull inner blocks (especially inside deep nesting) into well-named helper functions.</li>
+<li><strong>Replace conditional with polymorphism</strong> — large <code>if/else</code> trees often indicate missing dispatch.</li>
+<li><strong>Early return / guard clauses</strong> — invert conditions to reduce nesting depth quickly.</li>
+<li>Aim for each function to fit on a single screen (&lt; 40 SLOC) with CC ≤ 5.</li>
+</ul>
+
+<h2>Related strategies</h2>
+<p><a href="god-class.html">God Class</a> · <a href="feature-envy.html">Feature Envy</a></p>
+<h2>Related metrics</h2>
+<p><a href="../metrics/cyclomatic.html">Cyclomatic Complexity</a> · <a href="../metrics/maintainability.html">Maintainability Index</a> · <a href="../metrics/technical-debt.html">Technical Debt</a></p>
+
+<div class="page-nav"><a href="god-class.html" class="prev">← God Class</a><a href="feature-envy.html" class="next">Feature Envy →</a></div>
+</main>
+</div>
+</body>
+</html>

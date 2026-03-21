@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>RFC — Response for a Class — TSM Docs</title>
+<link rel="stylesheet" href="../style.css">
+</head>
+<body>
+<div class="layout">
+<nav class="sidebar">
+<div class="sidebar-header"><a href="../index.html" class="logo">TSM</a></div>
+<a href="../index.html">Home</a>
+<a href="../getting-started.html">Getting Started</a>
+<a href="../configuration.html">Configuration</a>
+<a href="../cli.html">CLI Reference</a>
+<a href="../output-formats.html">Output Formats</a>
+<div class="nav-section">Metrics</div>
+<a href="../metrics/cyclomatic.html">Cyclomatic Complexity</a>
+<a href="../metrics/halstead.html">Halstead Volume</a>
+<a href="../metrics/maintainability.html">Maintainability Index</a>
+<a href="../metrics/wmc.html">WMC</a>
+<a href="../metrics/dit.html">DIT</a>
+<a href="../metrics/nom.html">NOM / NOAM / NOOM</a>
+<a href="../metrics/woc.html">WOC</a>
+<a href="../metrics/tcc.html">TCC</a>
+<a href="../metrics/cbo.html">CBO</a>
+<a href="../metrics/rfc.html" class="active">RFC</a>
+<a href="../metrics/noi.html">NOI</a>
+<a href="../metrics/used-components.html">Used Components</a>
+<a href="../metrics/jsx-nesting.html">JSX Nesting</a>
+<a href="../metrics/technical-debt.html">Technical Debt</a>
+<div class="nav-section">Strategies</div>
+<a href="../strategies/index.html">Overview</a>
+<a href="../strategies/god-class.html">God Class</a>
+<a href="../strategies/brain-method.html">Brain Method</a>
+<a href="../strategies/feature-envy.html">Feature Envy</a>
+<a href="../strategies/refused-bequest.html">Refused Bequest</a>
+
+</nav>
+<main class="content">
+<div class="breadcrumb"><a href="../index.html">Home</a> / <a href="index.html">Metrics</a> / RFC</div>
+<a href="https://github.com/gabrielrf97/tsm/edit/main/docs/metrics/rfc.html" class="edit-link" target="_blank">Edit on GitHub</a>
+
+<h1>RFC — Response for a Class</h1>
+<p class="badge">Class Metric &nbsp;|&nbsp; AST-based</p>
+<p>The total number of distinct methods that can be invoked in response to a message sent to a class. Combines the class's own methods with the set of unique external method calls made from within the class body.</p>
+
+<h2>Formula</h2>
+<div class="formula">RFC = NOM + |unique callees|</div>
+<p>where <em>callees</em> are distinct method/function names called from the class body (via <code>call_expression</code> and <code>new_expression</code>). Chained calls like <code>arr.filter().map()</code> contribute each callee individually.</p>
+
+<h2>Callee extraction rules</h2>
+<ul>
+<li>Direct calls: <code>doThing()</code> → <code>"doThing"</code></li>
+<li>Method calls: <code>obj.process()</code> → <code>"process"</code></li>
+<li>Chained: <code>list.filter().map()</code> → <code>"filter"</code>, <code>"map"</code></li>
+<li>Constructor: <code>new Service()</code> → <code>"Service"</code></li>
+<li>Nested class boundaries stop recursion (inner class methods are separate entities)</li>
+</ul>
+
+<h2>TypeScript Example</h2>
+<pre><code><span class="kw">class</span> <span class="ty">Processor</span> {
+  <span class="fn">run</span>() {
+    <span class="kw">const</span> data = <span class="kw">this</span>.<span class="fn">fetch</span>();   <span class="cmt">// callee: fetch (own)</span>
+    validate(data);              <span class="cmt">// callee: validate</span>
+    <span class="kw">const</span> svc = <span class="kw">new</span> <span class="ty">Service</span>();  <span class="cmt">// callee: Service</span>
+    svc.<span class="fn">process</span>(data);          <span class="cmt">// callee: process</span>
+  }
+  <span class="fn">fetch</span>() { ... }              <span class="cmt">// own method</span>
+}
+<span class="cmt">// NOM=2, unique callees={fetch,validate,Service,process}=4</span>
+<span class="cmt">// RFC = 2 + 4 = 6</span>
+</code></pre>
+
+<h2>Thresholds</h2>
+<p>RFC is informational only — no configurable thresholds. Values above ~50 indicate a class that is difficult to test in isolation.</p>
+
+<h2>Related metrics</h2>
+<p><a href="cbo.html">CBO</a> · <a href="wmc.html">WMC</a> · <a href="nom.html">NOM</a></p>
+
+<div class="page-nav"><a href="cbo.html" class="prev">← CBO</a><a href="noi.html" class="next">NOI →</a></div>
+</main>
+</div>
+</body>
+</html>

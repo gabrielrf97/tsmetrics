@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>WMC — TSM Docs</title>
+  <link rel="stylesheet" href="../style.css">
+</head>
+<body>
+  <div class="layout">
+    <aside class="sidebar">
+      <div class="sidebar-header">
+        <a href="../index.html" class="logo">TSM</a>
+        <p class="sidebar-subtitle">TypeScript Static Analyzer</p>
+      </div>
+      <nav class="sidebar-nav">
+        <div class="nav-section">
+          <div class="nav-section-title">Getting Started</div>
+          <a href="../index.html">Introduction</a>
+          <a href="../getting-started.html">Installation</a>
+          <a href="../configuration.html">Configuration</a>
+          <a href="../cli.html">CLI Reference</a>
+          <a href="../output-formats.html">Output Formats</a>
+        </div>
+        <div class="nav-section">
+          <div class="nav-section-title">Metrics</div>
+          <a href="index.html">Overview</a>
+          <a href="cyclomatic.html">Cyclomatic Complexity</a>
+          <a href="halstead.html">Halstead Volume</a>
+          <a href="maintainability.html">Maintainability Index</a>
+          <a href="wmc.html" class="active">WMC</a>
+          <a href="dit.html">DIT</a>
+          <a href="nom.html">NOM / NOAM / NOOM</a>
+          <a href="woc.html">WOC</a>
+          <a href="tcc.html">TCC</a>
+          <a href="cbo.html">CBO</a>
+          <a href="rfc.html">RFC</a>
+          <a href="noi.html">NOI</a>
+          <a href="used-components.html">Used Components</a>
+          <a href="jsx-nesting.html">JSX Nesting</a>
+          <a href="technical-debt.html">Technical Debt</a>
+        </div>
+        <div class="nav-section">
+          <div class="nav-section-title">Strategies</div>
+          <a href="../strategies/index.html">Overview</a>
+          <a href="../strategies/god-class.html">God Class</a>
+          <a href="../strategies/brain-method.html">Brain Method</a>
+          <a href="../strategies/feature-envy.html">Feature Envy</a>
+          <a href="../strategies/refused-bequest.html">Refused Bequest</a>
+        </div>
+      </nav>
+    </aside>
+    <main class="content">
+
+      <div class="breadcrumb">
+        <a href="../index.html">Docs</a>
+        <span class="breadcrumb-sep">›</span>
+        <a href="index.html">Metrics</a>
+        <span class="breadcrumb-sep">›</span>
+        <span>WMC</span>
+      </div>
+      <div class="page-header">
+        <h1>Weighted Methods per Class</h1>
+        <p class="tagline">The sum of cyclomatic complexity across all methods of a class.</p>
+      </div>
+
+      <span class="badge badge-class">Class-level</span>
+
+      <h2>Overview</h2>
+      <p>
+        Weighted Methods per Class (WMC) is a class-level metric that captures overall class
+        complexity by summing the complexity of every method. Classes with high WMC are harder
+        to understand, test, and maintain. A very high WMC may indicate a
+        <a href="../strategies/god-class.html">God Class</a>.
+      </p>
+
+      <h2>Formula</h2>
+      <div class="formula">
+        WMC = &sum; CC(<span class="var">m</span>) &nbsp; for each method <span class="var">m</span> in the class
+      </div>
+      <p>
+        Each method's contribution equals its cyclomatic complexity (minimum 1). A class with
+        three trivial methods and no branching has WMC = 3.
+      </p>
+
+      <h2>What TSM includes in WMC</h2>
+      <p>TSM sums the CC of the following method kinds:</p>
+      <ul>
+        <li>Regular instance and static methods (<code>method_definition</code>)</li>
+        <li>Constructors</li>
+        <li>Getter and setter accessors</li>
+        <li>Abstract method signatures (<code>abstract_method_signature</code>)</li>
+      </ul>
+      <p>
+        Arrow function class fields are <em>not</em> included as WMC contributors, because they
+        are tracked as functions in the function table rather than as class methods.
+      </p>
+
+      <h2>Thresholds</h2>
+      <table class="threshold-table">
+        <thead>
+          <tr><th>Severity</th><th>Default value</th><th>Config key</th></tr>
+        </thead>
+        <tbody>
+          <tr><td><span class="sev-warning">warning</span></td><td>20</td><td><code>wmc.warning</code></td></tr>
+          <tr><td><span class="sev-error">error</span></td><td>50</td><td><code>wmc.error</code></td></tr>
+        </tbody>
+      </table>
+      <div class="code-block">
+        <div class="code-block-header">tsm.yaml</div>
+        <pre><span class="kw">thresholds</span>:
+  <span class="kw">wmc</span>:
+    <span class="str">warning</span>: <span class="num">15</span>
+    <span class="str">error</span>:   <span class="num">40</span></pre>
+      </div>
+
+      <h2>Interpretation</h2>
+      <table class="threshold-table">
+        <thead>
+          <tr><th>WMC range</th><th>Interpretation</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>1 – 19</td><td>Reasonable class complexity</td></tr>
+          <tr><td>20 – 49</td><td>High complexity; consider splitting responsibilities</td></tr>
+          <tr><td>50+</td><td>Very high complexity; strong refactoring candidate</td></tr>
+        </tbody>
+      </table>
+
+      <h2>Example</h2>
+      <div class="code-block">
+        <div class="code-block-header">TypeScript</div>
+        <pre><span class="kw">class</span> <span class="cl">OrderProcessor</span> {
+  <span class="kw">constructor</span>() {}              <span class="cmt">// CC=1</span>
+
+  <span class="fn">validate</span>(order: <span class="ty">Order</span>) {     <span class="cmt">// CC=3 (2 ifs)</span>
+    <span class="kw">if</span> (!order.items.length) <span class="kw">return</span> <span class="kw">false</span>;
+    <span class="kw">if</span> (!order.customer) <span class="kw">return</span> <span class="kw">false</span>;
+    <span class="kw">return</span> <span class="kw">true</span>;
+  }
+
+  <span class="fn">process</span>(order: <span class="ty">Order</span>) {      <span class="cmt">// CC=4 (3 branches)</span>
+    <span class="kw">if</span> (!<span class="kw">this</span>.<span class="fn">validate</span>(order)) <span class="kw">return</span>;
+    <span class="kw">if</span> (order.isPriority) { <span class="cmt">/* ... */</span> }
+    <span class="kw">else</span> { <span class="cmt">/* ... */</span> }
+  }
+}
+<span class="cmt">// WMC = 1 + 3 + 4 = 8</span></pre>
+      </div>
+
+      <h2>Usage in detection strategies</h2>
+      <ul>
+        <li><a href="../strategies/god-class.html">God Class</a> — WMC &gt; 47 is one of three required conditions</li>
+      </ul>
+
+      <h2>JSON field</h2>
+      <p>In JSON output, the field is named <code>wmc</code> on each class record.</p>
+
+      <h2>References</h2>
+      <ul>
+        <li>Chidamber, S. R. &amp; Kemerer, C. F. (1994). <em>A Metrics Suite for Object Oriented Design.</em> IEEE Transactions on Software Engineering.</li>
+      </ul>
+
+      <div class="page-nav">
+        <a href="maintainability.html" class="prev">
+          <span class="nav-dir">← Previous</span>
+          <span class="nav-title">Maintainability Index</span>
+        </a>
+        <a href="dit.html" class="next">
+          <span class="nav-dir">Next</span>
+          <span class="nav-title">DIT →</span>
+        </a>
+      </div>
+      <a href="https://github.com/gabrielrf97/tsm/edit/main/docs/metrics/wmc.html" class="edit-link">Edit on GitHub</a>
+
+    </main>
+  </div>
+</body>
+</html>
