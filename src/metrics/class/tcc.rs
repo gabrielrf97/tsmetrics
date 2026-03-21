@@ -107,11 +107,20 @@ fn collect_method_fields(class_node: Node, source: &[u8]) -> Vec<HashSet<String>
     let mut result = Vec::new();
     let mut cursor = body.walk();
     for child in body.children(&mut cursor) {
-        if child.kind() == "method_definition" {
+        // Bug fix 1: skip static methods — their `this` refers to the class
+        // constructor, not the instance, so they must not count towards TCC.
+        if child.kind() == "method_definition" && !has_static_modifier(child) {
             result.push(this_field_accesses(child, source));
         }
     }
     result
+}
+
+/// Returns true if `node` has a direct child with kind `"static"`.
+fn has_static_modifier(node: Node) -> bool {
+    let mut cursor = node.walk();
+    let found = node.children(&mut cursor).any(|child| child.kind() == "static");
+    found
 }
 
 /// Recursively collect all distinct property names from `this.<name>`
@@ -136,7 +145,19 @@ fn collect_this_accesses(node: Node, source: &[u8], fields: &mut HashSet<String>
     }
     let mut cursor = node.walk();
     for child in node.children(&mut cursor) {
-        collect_this_accesses(child, source, fields);
+        // Bug fix 2: stop recursion at nodes that introduce a new `this`
+        // binding (regular functions and class method bodies).  Arrow
+        // functions capture the enclosing `this`, so we do recurse into them.
+        match child.kind() {
+            "function"
+            | "function_declaration"
+            | "generator_function"
+            | "generator_function_declaration"
+            | "method_definition" => {
+                // New `this` binding — do not descend.
+            }
+            _ => collect_this_accesses(child, source, fields),
+        }
     }
 }
 
@@ -357,5 +378,111 @@ class B {
         assert_eq!(b.method_count, 2);
         assert_eq!(b.connected_pairs, 0);
         assert!((b.tcc - 0.0).abs() < 1e-9, "B: expected TCC=0.0");
+    }
+
+    // ── Bug regression: static methods must NOT be counted ────────────────
+
+    /// A static method's `this` refers to the class constructor, not the
+    /// instance.  Before the fix, `static create()` was included in
+    /// `method_count`, making it 2 and reducing TCC to 0.0 even though the
+    /// single instance method `getX` is vacuously cohesive.
+    #[test]
+    fn test_static_method_excluded_from_tcc() {
+        let src = r#"
+class WithStatic {
+    private x: number;
+    getX(): number { return this.x; }
+    static create(): WithStatic { return new WithStatic(); }
+}
+"#;
+        let results = tcc_for(src);
+        assert_eq!(results.len(), 1);
+        let c = &results[0];
+        assert_eq!(c.class_name, "WithStatic");
+        // Only the instance method `getX` should be counted.
+        assert_eq!(c.method_count, 1, "static method must not count");
+        assert_eq!(c.total_pairs, 0);
+        assert_eq!(c.connected_pairs, 0);
+        assert!(
+            (c.tcc - 1.0).abs() < 1e-9,
+            "single instance method → TCC=1.0, got {}",
+            c.tcc
+        );
+    }
+
+    // ── Bug regression: `this` inside nested regular function not attributed ──
+
+    /// `methodB` contains a nested regular `function inner()`.  Inside that
+    /// inner function `this` is rebound — `this.x` there does NOT belong to
+    /// `methodB`.  Before the fix, `methodB`'s field set incorrectly included
+    /// `x`, making the pair (methodA, methodB) appear connected and TCC=1.0.
+    /// After the fix the sets are {x} and {} respectively → TCC=0.0.
+    #[test]
+    fn test_nested_regular_function_this_not_attributed_to_outer_method() {
+        let src = r#"
+class Outer {
+    private x: number;
+    methodA(): number {
+        return this.x;
+    }
+    methodB(): void {
+        function inner(this: any) {
+            console.log(this.x);
+        }
+    }
+}
+"#;
+        let results = tcc_for(src);
+        assert_eq!(results.len(), 1);
+        let c = &results[0];
+        assert_eq!(c.class_name, "Outer");
+        assert_eq!(c.method_count, 2);
+        assert_eq!(c.total_pairs, 1);
+        // methodA accesses {x}; methodB accesses {} — no shared field.
+        assert_eq!(
+            c.connected_pairs, 0,
+            "this.x inside inner() must not connect methodB to methodA"
+        );
+        assert!(
+            (c.tcc - 0.0).abs() < 1e-9,
+            "expected TCC=0.0, got {}",
+            c.tcc
+        );
+    }
+
+    // ── Arrow functions DO capture outer `this` ───────────────────────────
+
+    /// `this.x` inside an arrow function nested in `methodB` *does* belong to
+    /// `methodB` because arrow functions lexically capture `this`.
+    #[test]
+    fn test_arrow_function_this_attributed_to_outer_method() {
+        let src = r#"
+class WithArrow {
+    private x: number;
+    methodA(): number {
+        return this.x;
+    }
+    methodB(): void {
+        const fn = () => { console.log(this.x); };
+        fn();
+    }
+}
+"#;
+        let results = tcc_for(src);
+        assert_eq!(results.len(), 1);
+        let c = &results[0];
+        assert_eq!(c.class_name, "WithArrow");
+        assert_eq!(c.method_count, 2);
+        assert_eq!(c.total_pairs, 1);
+        // Both methods access `x` (methodB via arrow closure) → connected.
+        assert_eq!(
+            c.connected_pairs, 1,
+            "this.x inside arrow fn must count for the enclosing method"
+        );
+        assert!(
+            (c.tcc - 1.0).abs() < 1e-9,
+            "expected TCC=1.0, got {}",
+            c.tcc
+        );
     }
 }
