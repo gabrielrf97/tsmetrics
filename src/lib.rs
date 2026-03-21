@@ -9,6 +9,7 @@ pub mod utils;
 use anyhow::Result;
 use rayon::prelude::*;
 use std::fs;
+use std::time::Instant;
 
 use config::Config;
 use structs::AnalysisResult;
@@ -17,6 +18,8 @@ use structs::AnalysisResult;
 pub fn analyze(config: &Config) -> Result<AnalysisResult> {
     let files = utils::collect_ts_files(&config.paths);
     let verbose = config.verbose;
+
+    let start = Instant::now();
 
     let file_metrics: Vec<_> = files
         .par_iter()
@@ -45,9 +48,17 @@ pub fn analyze(config: &Config) -> Result<AnalysisResult> {
         })
         .collect();
 
+    let elapsed = start.elapsed();
+
     let mut result = AnalysisResult::new();
     for fm in file_metrics {
         result.add_file(fm);
     }
+
+    if config.timing {
+        result.elapsed_secs = elapsed.as_secs_f64();
+        result.num_threads = rayon::current_num_threads();
+    }
+
     Ok(result)
 }

@@ -40,6 +40,10 @@ enum Commands {
         /// Filter: only show functions with at least this many lines of code
         #[arg(long)]
         min_loc: Option<usize>,
+
+        /// Show elapsed time and thread count after analysis
+        #[arg(long)]
+        timing: bool,
     },
 }
 
@@ -60,6 +64,7 @@ fn main() -> Result<()> {
             verbose,
             min_complexity,
             min_loc,
+            timing,
         } => {
             let output_format = match format {
                 Format::Table => OutputFormat::Table,
@@ -72,6 +77,7 @@ fn main() -> Result<()> {
             config.verbose = verbose;
             config.min_complexity = min_complexity;
             config.min_loc = min_loc;
+            config.timing = timing;
 
             if verbose {
                 eprintln!("Running analysis...");
@@ -100,6 +106,13 @@ fn main() -> Result<()> {
             }
 
             ts_static_analyzer::output::render(&result, &output_format)?;
+
+            if timing {
+                eprintln!(
+                    "Analysis completed in {:.3}s across {} file(s) using {} thread(s)",
+                    result.elapsed_secs, result.total_files, result.num_threads
+                );
+            }
         }
     }
 

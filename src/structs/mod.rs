@@ -43,6 +43,12 @@ pub struct AnalysisResult {
     pub total_files: usize,
     pub total_functions: usize,
     pub total_loc: usize,
+    /// Wall-clock duration of the analysis in seconds (populated when timing is enabled).
+    #[serde(skip)]
+    pub elapsed_secs: f64,
+    /// Number of Rayon threads used during analysis.
+    #[serde(skip)]
+    pub num_threads: usize,
 }
 
 impl AnalysisResult {
@@ -52,6 +58,8 @@ impl AnalysisResult {
             total_files: 0,
             total_functions: 0,
             total_loc: 0,
+            elapsed_secs: 0.0,
+            num_threads: 0,
         }
     }
 
