@@ -52,6 +52,7 @@ enum Format {
     Table,
     Json,
     Csv,
+    Html,
 }
 
 fn main() -> Result<()> {
@@ -70,6 +71,7 @@ fn main() -> Result<()> {
                 Format::Table => OutputFormat::Table,
                 Format::Json => OutputFormat::Json,
                 Format::Csv => OutputFormat::Csv,
+                Format::Html => OutputFormat::Html,
             };
 
             let mut config = Config::new(paths);
