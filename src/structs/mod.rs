@@ -1,3 +1,4 @@
+use crate::thresholds::Violation;
 use serde::Serialize;
 
 /// Per-class metrics.
@@ -49,6 +50,7 @@ pub struct AnalysisResult {
     /// Number of Rayon threads used during analysis.
     #[serde(skip)]
     pub num_threads: usize,
+    pub violations: Vec<Violation>,
 }
 
 impl AnalysisResult {
@@ -60,6 +62,7 @@ impl AnalysisResult {
             total_loc: 0,
             elapsed_secs: 0.0,
             num_threads: 0,
+            violations: Vec::new(),
         }
     }
 
@@ -68,6 +71,10 @@ impl AnalysisResult {
         self.total_functions += file.function_count;
         self.total_files += 1;
         self.files.push(file);
+    }
+
+    pub fn add_violations(&mut self, violations: Vec<Violation>) {
+        self.violations.extend(violations);
     }
 }
 

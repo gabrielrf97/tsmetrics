@@ -4,6 +4,7 @@ pub mod output;
 pub mod parse;
 pub mod strategies;
 pub mod structs;
+pub mod thresholds;
 pub mod utils;
 
 use anyhow::Result;
@@ -16,6 +17,7 @@ use std::time::Instant;
 
 use config::Config;
 use structs::AnalysisResult;
+use thresholds::{check_class_violations, check_function_violations, load_thresholds};
 
 /// Run analysis over all TypeScript files found in the configured paths.
 pub fn analyze(config: &Config) -> Result<AnalysisResult> {
@@ -29,6 +31,13 @@ pub fn analyze(config: &Config) -> Result<AnalysisResult> {
     // the calling thread too, which Rayon may use when the workload is small.
     let thread_ids: Arc<Mutex<HashSet<thread::ThreadId>>> =
         Arc::new(Mutex::new(HashSet::new()));
+
+    // Load thresholds from tsm.yaml in cwd or any of the analyzed paths
+    let cwd = std::env::current_dir().unwrap_or_default();
+    let mut search_dirs: Vec<&std::path::Path> = vec![cwd.as_path()];
+    let path_refs: Vec<&std::path::Path> = config.paths.iter().map(|p| p.as_path()).collect();
+    search_dirs.extend(path_refs.iter().copied());
+    let thresholds_config = load_thresholds(&search_dirs)?;
 
     let file_metrics: Vec<_> = files
         .par_iter()
@@ -63,6 +72,32 @@ pub fn analyze(config: &Config) -> Result<AnalysisResult> {
 
     let mut result = AnalysisResult::new();
     for fm in file_metrics {
+        // Check violations for functions
+        for func in &fm.functions {
+            let violations = check_function_violations(
+                &func.name,
+                &func.file,
+                func.line,
+                func.cyclomatic_complexity,
+                func.loc,
+                func.max_nesting,
+                func.param_count,
+                &thresholds_config,
+            );
+            result.add_violations(violations);
+        }
+        // Check violations for classes
+        for class in &fm.classes {
+            let violations = check_class_violations(
+                &class.name,
+                &class.file,
+                class.line,
+                class.wmc,
+                class.noi,
+                &thresholds_config,
+            );
+            result.add_violations(violations);
+        }
         result.add_file(fm);
     }
 
