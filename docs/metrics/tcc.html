@@ -49,7 +49,7 @@
 <h2>Formula</h2>
 <div class="formula">TCC = connected_pairs / total_pairs</div>
 <div class="formula">total_pairs = N × (N − 1) / 2 &nbsp; (where N = number of non-static methods)</div>
-<p>Returns 0 when there are fewer than 2 non-static methods.</p>
+<p>Returns 1.0 (vacuously cohesive) when there are fewer than 2 non-static methods.</p>
 
 <h2>Connection rule</h2>
 <p>Two methods are <em>connected</em> when their sets of <code>this.field</code> accesses share at least one field name. Only <code>this.<em>identifier</em></code> patterns are counted (not chained like <code>this.a.b</code>).</p>

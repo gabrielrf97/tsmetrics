@@ -48,7 +48,7 @@
 <table class="threshold-table">
 <thead><tr><th>Metric</th><th>Full Name</th><th>Description</th></tr></thead>
 <tbody>
-<tr><td><strong>NOM</strong></td><td>Number of Methods</td><td>Total concrete methods in the class body (NOM = NOAM + NOOM)</td></tr>
+<tr><td><strong>NOM</strong></td><td>Number of Methods</td><td>Total methods in the class body, including abstract methods (NOM = NOAM + NOOM)</td></tr>
 <tr><td><strong>NOAM</strong></td><td>Number of Added Methods</td><td>Concrete methods that are new (not overrides of a parent)</td></tr>
 <tr><td><strong>NOOM</strong></td><td>Number of Overriding Methods</td><td>Concrete methods declared with the <code>override</code> keyword</td></tr>
 </tbody>
@@ -80,7 +80,7 @@
 
 <h2>Notes</h2>
 <ul>
-<li>Abstract methods and method signatures (interfaces) are excluded; only concrete method bodies count.</li>
+<li>Abstract methods (<code>abstract_method_signature</code> nodes) ARE included in NOM and count toward NOAM. Only interface method signatures defined outside a class body are excluded.</li>
 <li>Static methods are included.</li>
 <li>Constructor is included in NOAM.</li>
 <li>Only the <code>override</code> keyword triggers NOOM; implicit overrides (no keyword) count as NOAM.</li>

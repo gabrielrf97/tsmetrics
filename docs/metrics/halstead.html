@@ -84,7 +84,23 @@
       <p>TSM classifies every AST leaf node as either an <strong>operator</strong> or an <strong>operand</strong>:</p>
 
       <h3>Operators (anonymous leaf tokens)</h3>
-      <p>Arithmetic: <code>+</code> <code>-</code> <code>*</code> <code>/</code> <code>%</code> <code>**</code> · Comparison: <code>===</code> <code>!==</code> <code>&lt;</code> <code>&gt;</code> etc. · Logical: <code>&amp;&amp;</code> <code>||</code> <code>??</code> <code>!</code> · Assignment: <code>=</code> <code>+=</code> etc. · Keyword operators: <code>if</code> <code>return</code> <code>new</code> <code>typeof</code> <code>await</code> <code>yield</code> <code>throw</code> · Member access: <code>.</code> <code>?.</code> · Arrow: <code>=&gt;</code> · Spread: <code>...</code></p>
+      <p>
+        Arithmetic: <code>+</code> <code>-</code> <code>*</code> <code>/</code> <code>%</code> <code>**</code> ·
+        Equality: <code>===</code> <code>!==</code> <code>==</code> <code>!=</code> ·
+        Comparison: <code>&lt;</code> <code>&gt;</code> <code>&lt;=</code> <code>&gt;=</code> ·
+        Logical: <code>&amp;&amp;</code> <code>||</code> <code>??</code> <code>!</code> ·
+        Bitwise: <code>&amp;</code> <code>|</code> <code>^</code> <code>~</code> <code>&lt;&lt;</code> <code>&gt;&gt;</code> <code>&gt;&gt;&gt;</code> ·
+        Assignment: <code>=</code> <code>+=</code> <code>-=</code> <code>*=</code> <code>/=</code> <code>%=</code> <code>**=</code> <code>&amp;&amp;=</code> <code>||=</code> <code>??=</code> <code>&amp;=</code> <code>|=</code> <code>^=</code> <code>&lt;&lt;=</code> <code>&gt;&gt;=</code> <code>&gt;&gt;&gt;=</code> ·
+        Update: <code>++</code> <code>--</code> ·
+        Member access: <code>.</code> <code>?.</code> ·
+        Spread/rest: <code>...</code> ·
+        Arrow: <code>=&gt;</code> ·
+        Control flow: <code>if</code> <code>else</code> <code>while</code> <code>for</code> <code>in</code> <code>of</code> <code>switch</code> <code>case</code> <code>default</code> ·
+        Keyword operators: <code>return</code> <code>new</code> <code>typeof</code> <code>instanceof</code> <code>delete</code> <code>void</code> ·
+        Async/generator: <code>await</code> <code>yield</code> ·
+        Jump: <code>throw</code> <code>break</code> <code>continue</code> ·
+        Ternary: <code>?</code>
+      </p>
 
       <h3>Operands (named AST nodes)</h3>
       <p><code>identifier</code>, <code>property_identifier</code>, <code>this</code>, <code>super</code>, <code>number</code>, <code>string</code>, <code>template_string</code>, <code>true</code>, <code>false</code>, <code>null</code>, <code>regex</code></p>

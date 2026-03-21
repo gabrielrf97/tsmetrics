@@ -79,7 +79,7 @@
 <ul>
 <li>SLOC (source lines of code) excludes blank lines and comment-only lines.</li>
 <li>The <code>per_100_sloc</code> normalisation allows fair comparison between files of different sizes.</li>
-<li>Functions with HV = 0 (trivial bodies) contribute zero debt regardless of MI.</li>
+<li>Functions with HV = 0 still contribute debt when MI &lt; 100: <code>debt_f = (1 − MI/100) × √(0+1) = 1 − MI/100</code>. Only a perfect MI of 100 reduces the contribution to zero.</li>
 </ul>
 
 <h2>Related metrics</h2>
