@@ -1,6 +1,6 @@
 use serde::Serialize;
 
-/// Per-class WMC (Weighted Methods per Class) metrics.
+/// Per-class metrics.
 #[derive(Debug, Clone, Serialize)]
 pub struct ClassMetrics {
     pub name: String,
@@ -9,6 +9,8 @@ pub struct ClassMetrics {
     pub method_count: usize,
     /// Sum of cyclomatic complexities of all methods in the class.
     pub wmc: usize,
+    /// Number of interfaces listed in the `implements` clause (NOI).
+    pub noi: usize,
 }
 
 #[derive(Debug, Clone, Serialize)]
