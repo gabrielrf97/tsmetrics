@@ -300,4 +300,31 @@ mod tests {
         assert_eq!(m["Mid"], 1);
         assert_eq!(m["Leaf"], 2);
     }
+
+    // ── Named class expressions ───────────────────────────────────────────────
+    // Regression: `const X = class Foo extends Base {}` was silently dropped
+    // because walk_classes only visited `class_declaration` nodes.
+
+    #[test]
+    fn named_class_expression_no_parent_dit_is_zero() {
+        let m = dit_map("const Foo = class FooClass {}");
+        assert_eq!(m.get("FooClass").copied(), Some(0));
+    }
+
+    #[test]
+    fn named_class_expression_extends_dit_is_one() {
+        let src = "class Base {}\nconst Foo = class FooClass extends Base {}";
+        let m = dit_map(src);
+        assert_eq!(m["Base"], 0);
+        assert_eq!(m["FooClass"], 1);
+    }
+
+    #[test]
+    fn named_class_expression_in_deep_chain() {
+        let src = "class A {}\nclass B extends A {}\nconst C = class CClass extends B {}";
+        let m = dit_map(src);
+        assert_eq!(m["A"], 0);
+        assert_eq!(m["B"], 1);
+        assert_eq!(m["CClass"], 2);
+    }
 }
