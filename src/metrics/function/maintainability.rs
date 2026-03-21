@@ -57,15 +57,19 @@ pub fn compute(source: &str) -> Vec<MaintainabilityMetrics> {
         .expect("Error loading TypeScript grammar");
     let tree = parser.parse(source, None).expect("Failed to parse source");
 
-    // Collect Halstead volumes keyed by function name (first match wins for
-    // duplicate names — consistent with how other metrics work).
+    // Collect Halstead volumes in depth-first traversal order — same order
+    // as collect_functions below, so we match by index rather than by name
+    // to avoid collisions between same-named functions (e.g. `constructor`,
+    // `render`, anonymous arrow functions).
     let halstead_results = halstead_compute(source);
 
     let mut results = Vec::new();
+    let mut halstead_idx: usize = 0;
     collect_functions(
         tree.root_node(),
         source.as_bytes(),
         &halstead_results,
+        &mut halstead_idx,
         &mut results,
     );
     results
@@ -90,6 +94,7 @@ fn collect_functions(
     node: Node<'_>,
     source: &[u8],
     halstead_results: &[super::halstead::FunctionHalstead],
+    halstead_idx: &mut usize,
     out: &mut Vec<MaintainabilityMetrics>,
 ) {
     if is_function_node(node) {
@@ -102,12 +107,15 @@ fn collect_functions(
         let loc = count_loc(node, source);
         let cc = cyclomatic_complexity(node, source);
 
-        // Find the matching Halstead volume by name (same order as halstead::compute).
+        // Match by traversal index, not by name, so that same-named functions
+        // (e.g. `constructor`, `render`, anonymous arrow functions) each get
+        // their own correct Halstead volume. Both halstead::compute and this
+        // function traverse the AST in the same depth-first order.
         let hv = halstead_results
-            .iter()
-            .find(|fh| fh.name == name)
+            .get(*halstead_idx)
             .map(|fh| fh.metrics.volume)
             .unwrap_or(0.0);
+        *halstead_idx += 1;
 
         let metrics = maintainability_index(&name, hv, cc, loc);
         out.push(metrics);
@@ -115,14 +123,14 @@ fn collect_functions(
         // Recurse into children to find nested functions (treated separately).
         let mut cursor = node.walk();
         for child in node.children(&mut cursor) {
-            collect_functions(child, source, halstead_results, out);
+            collect_functions(child, source, halstead_results, halstead_idx, out);
         }
         return;
     }
 
     let mut cursor = node.walk();
     for child in node.children(&mut cursor) {
-        collect_functions(child, source, halstead_results, out);
+        collect_functions(child, source, halstead_results, halstead_idx, out);
     }
 }
 
@@ -315,6 +323,60 @@ mod tests {
         let names: Vec<&str> = results.iter().map(|m| m.name.as_str()).collect();
         assert!(names.contains(&"foo"));
         assert!(names.contains(&"bar"));
+    }
+
+    #[test]
+    fn same_name_different_scope_get_independent_mi() {
+        // Two `process` methods in different classes: the second is more complex.
+        // Before the fix, both would receive A.process's Halstead volume.
+        let src = r#"
+            class A {
+                process() { return 1; }
+            }
+            class B {
+                process(data: number[]): number {
+                    let r = 0;
+                    for (let i = 0; i < data.length; i++) {
+                        if (data[i] > 0) { r += data[i] * 2; }
+                        else if (data[i] < 0) { r -= data[i]; }
+                        else { r += 1; }
+                    }
+                    return r;
+                }
+            }
+        "#;
+        let results = compute(src);
+        assert_eq!(results.len(), 2);
+        // Halstead volumes must differ (bug: before the fix both would be equal).
+        assert_ne!(
+            results[0].halstead_volume,
+            results[1].halstead_volume,
+            "same-named methods must have independent Halstead volumes"
+        );
+        // B.process is substantially more complex — it must have lower MI.
+        assert!(
+            results[0].mi > results[1].mi,
+            "A.process (simple) should have higher MI than B.process (complex): {:.2} vs {:.2}",
+            results[0].mi,
+            results[1].mi,
+        );
+    }
+
+    #[test]
+    fn anonymous_arrow_functions_get_independent_mi() {
+        // Two anonymous arrow functions with clearly different complexity.
+        // Before the fix, both would get the first arrow function's volume.
+        let src = r#"
+            const f1 = () => 1;
+            const f2 = (a: number, b: number, c: number) => a * b + c / (a - b) * (b + c);
+        "#;
+        let results = compute(src);
+        assert_eq!(results.len(), 2);
+        assert_ne!(
+            results[0].halstead_volume,
+            results[1].halstead_volume,
+            "anonymous arrow functions must have independent Halstead volumes"
+        );
     }
 
     #[test]
