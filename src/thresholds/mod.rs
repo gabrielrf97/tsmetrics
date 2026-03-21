@@ -103,14 +103,25 @@ struct PartialMetricThreshold {
     error: Option<usize>,
 }
 
-fn merge_threshold(partial: Option<PartialMetricThreshold>, default: MetricThreshold) -> MetricThreshold {
-    match partial {
+fn merge_threshold(
+    partial: Option<PartialMetricThreshold>,
+    default: MetricThreshold,
+) -> anyhow::Result<MetricThreshold> {
+    let merged = match partial {
         None => default,
         Some(p) => MetricThreshold {
             warning: p.warning.unwrap_or(default.warning),
             error: p.error.unwrap_or(default.error),
         },
+    };
+    if merged.warning > merged.error {
+        anyhow::bail!(
+            "invalid threshold: warning ({}) > error ({})",
+            merged.warning,
+            merged.error
+        );
     }
+    Ok(merged)
 }
 
 /// Load thresholds from a tsm.yaml found in any of the given directories.
@@ -138,12 +149,12 @@ fn load_from_file(path: &Path) -> anyhow::Result<ThresholdsConfig> {
         cyclomatic_complexity: merge_threshold(
             yaml.thresholds.cyclomatic_complexity,
             defaults.cyclomatic_complexity,
-        ),
-        loc: merge_threshold(yaml.thresholds.loc, defaults.loc),
-        nesting: merge_threshold(yaml.thresholds.nesting, defaults.nesting),
-        params: merge_threshold(yaml.thresholds.params, defaults.params),
-        wmc: merge_threshold(yaml.thresholds.wmc, defaults.wmc),
-        noi: merge_threshold(yaml.thresholds.noi, defaults.noi),
+        )?,
+        loc: merge_threshold(yaml.thresholds.loc, defaults.loc)?,
+        nesting: merge_threshold(yaml.thresholds.nesting, defaults.nesting)?,
+        params: merge_threshold(yaml.thresholds.params, defaults.params)?,
+        wmc: merge_threshold(yaml.thresholds.wmc, defaults.wmc)?,
+        noi: merge_threshold(yaml.thresholds.noi, defaults.noi)?,
     })
 }
 
@@ -305,6 +316,19 @@ mod tests {
         let config = load_thresholds(&[dir.path()]).unwrap();
         assert_eq!(config.loc.warning, 30);
         assert_eq!(config.loc.error, ThresholdsConfig::default().loc.error);
+    }
+
+    #[test]
+    fn test_load_thresholds_inverted_warning_error_returns_error() {
+        // Setting only warning: 200 for loc (default error: 100) produces warning > error,
+        // which must be rejected instead of silently misclassifying values in [100, 199].
+        let dir = tempfile::tempdir().unwrap();
+        let yaml_path = dir.path().join("tsm.yaml");
+        std::fs::write(&yaml_path, "thresholds:\n  loc:\n    warning: 200\n").unwrap();
+        let result = load_thresholds(&[dir.path()]);
+        assert!(result.is_err(), "expected error for warning > error, got: {:?}", result);
+        let msg = result.unwrap_err().to_string();
+        assert!(msg.contains("warning") && msg.contains("error"), "error message should mention warning and error: {}", msg);
     }
 
     #[test]
