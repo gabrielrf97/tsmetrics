@@ -1,8 +1,10 @@
 pub mod dit;
 pub mod nom;
+pub mod tcc;
 pub mod wmc;
 pub mod woc;
 
+pub use tcc::{compute_class_tcc, ClassTcc};
 pub use woc::{compute_class_woc, ClassWoc};
 
 use crate::structs::ClassMetrics;
