@@ -48,7 +48,7 @@ pub fn detect_brain_methods(
     functions
         .iter()
         .filter(|f| {
-            f.loc > config.loc_threshold
+            f.sloc > config.loc_threshold
                 && f.cyclomatic_complexity > config.cc_threshold
                 && f.max_nesting > config.nesting_threshold
         })
@@ -73,12 +73,15 @@ mod tests {
         cyclomatic_complexity: usize,
         max_nesting: usize,
     ) -> FunctionMetrics {
+        // sloc is always less than loc to simulate blank/comment lines.
+        // This ensures tests can distinguish between the two fields.
+        let sloc = if loc > 0 { loc - 1 } else { 0 };
         FunctionMetrics {
             name: name.to_string(),
             file: "test.ts".to_string(),
             line: 1,
             loc,
-            sloc: loc,
+            sloc,
             cyclomatic_complexity,
             max_nesting,
             param_count: 0,
@@ -156,8 +159,9 @@ mod tests {
 
     #[test]
     fn test_one_above_all_thresholds_flagged() {
-        let config = BrainMethodConfig::default(); // LOC>65, CC>5, nesting>3
-        let functions = vec![make_fn("justOver", 66, 6, 4)];
+        let config = BrainMethodConfig::default(); // SLOC>65, CC>5, nesting>3
+        // loc=67 → sloc=66, which is just above the threshold of 65
+        let functions = vec![make_fn("justOver", 67, 6, 4)];
         let results = detect_brain_methods(&functions, &config);
         assert_eq!(results.len(), 1);
         assert_eq!(results[0].name, "justOver");
@@ -178,6 +182,29 @@ mod tests {
         assert_eq!(results.len(), 2);
         assert_eq!(results[0].name, "brainMethod");
         assert_eq!(results[1].name, "anotherBrain");
+    }
+
+    // ── loc > threshold but sloc <= threshold — must NOT be flagged ───────────
+    //
+    // This test would fail if the filter used `f.loc` instead of `f.sloc`.
+
+    #[test]
+    fn test_high_loc_but_low_sloc_not_flagged() {
+        let config = BrainMethodConfig::default(); // SLOC>65, CC>5, nesting>3
+        // loc=80 exceeds the threshold (80 > 65), but sloc=60 does not (60 ≤ 65).
+        // A filter on f.loc would incorrectly flag this; f.sloc must be used.
+        let func = FunctionMetrics {
+            name: "bloatedComments".to_string(),
+            file: "test.ts".to_string(),
+            line: 1,
+            loc: 80,
+            sloc: 60,
+            cyclomatic_complexity: 10,
+            max_nesting: 5,
+            param_count: 0,
+        };
+        let results = detect_brain_methods(&[func], &config);
+        assert!(results.is_empty());
     }
 
     // ── Empty input ────────────────────────────────────────────────────────────
