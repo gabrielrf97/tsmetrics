@@ -1,4 +1,5 @@
 pub mod class;
+pub mod file;
 pub mod function;
 pub mod react;
 
