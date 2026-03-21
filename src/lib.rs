@@ -2,6 +2,7 @@ pub mod config;
 pub mod metrics;
 pub mod output;
 pub mod parse;
+pub mod strategies;
 pub mod structs;
 pub mod utils;
 
