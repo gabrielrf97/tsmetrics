@@ -16,6 +16,7 @@ pub enum OutputFormat {
     Table,
     Json,
     Csv,
+    Html,
 }
 
 impl Config {
