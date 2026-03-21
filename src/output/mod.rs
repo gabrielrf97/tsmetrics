@@ -1,5 +1,6 @@
 use crate::config::OutputFormat;
 use crate::structs::{AnalysisResult, FunctionMetrics};
+use crate::thresholds::Severity;
 use anyhow::Result;
 use comfy_table::{presets::UTF8_FULL, Cell, Color, Table};
 
@@ -61,6 +62,41 @@ fn render_table(result: &AnalysisResult) {
     }
 
     println!("{table}");
+
+    // Render violations table if any
+    if !result.violations.is_empty() {
+        println!(
+            "\nViolations ({} total):\n",
+            result.violations.len()
+        );
+        let mut vtable = Table::new();
+        vtable.load_preset(UTF8_FULL);
+        vtable.set_header(vec![
+            Cell::new("File").fg(Color::Cyan),
+            Cell::new("Entity").fg(Color::Cyan),
+            Cell::new("Line").fg(Color::Cyan),
+            Cell::new("Metric").fg(Color::Cyan),
+            Cell::new("Value").fg(Color::Cyan),
+            Cell::new("Threshold").fg(Color::Cyan),
+            Cell::new("Severity").fg(Color::Cyan),
+        ]);
+        for v in &result.violations {
+            let severity_cell = match v.severity {
+                Severity::Error => Cell::new("error").fg(Color::Red),
+                Severity::Warning => Cell::new("warning").fg(Color::Yellow),
+            };
+            vtable.add_row(vec![
+                Cell::new(&v.file),
+                Cell::new(&v.entity),
+                Cell::new(v.line),
+                Cell::new(&v.metric),
+                Cell::new(v.value),
+                Cell::new(v.threshold),
+                severity_cell,
+            ]);
+        }
+        println!("{vtable}");
+    }
 }
 
 fn render_json(result: &AnalysisResult) -> Result<()> {
