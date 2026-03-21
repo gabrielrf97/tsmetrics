@@ -1,3 +1,5 @@
+use std::collections::HashSet;
+
 use serde::Serialize;
 use tree_sitter::Node;
 
@@ -113,6 +115,143 @@ fn has_override_modifier(method: Node) -> bool {
         }
     }
     false
+}
+
+/// Collect the set of names declared as `abstract` methods in the class at `class_node`.
+///
+/// Used by the Refused Bequest strategy to identify abstract method signatures
+/// so that child-class implementations (which may omit the `override` keyword)
+/// can still be counted as overriding methods.
+pub fn abstract_method_names(class_node: Node, source: &[u8]) -> HashSet<String> {
+    let mut names = HashSet::new();
+    let body = match class_node.child_by_field_name("body") {
+        Some(b) => b,
+        None => return names,
+    };
+    let mut cursor = body.walk();
+    for member in body.children(&mut cursor) {
+        if member.kind() == "abstract_method_signature" {
+            if let Some(name_node) = member.child_by_field_name("name") {
+                if let Ok(text) = name_node.utf8_text(source) {
+                    names.insert(text.to_string());
+                }
+            }
+        }
+    }
+    names
+}
+
+/// Walk the AST collecting every named class node (declarations and class expressions),
+/// keyed by the class name, pairing it with the abstract method names it declares.
+///
+/// This is used by Refused Bequest detection to resolve abstract method implementations
+/// in child classes that lack the `override` keyword.
+pub fn collect_abstract_methods_by_class(
+    root: Node,
+    source: &[u8],
+) -> std::collections::HashMap<String, HashSet<String>> {
+    let mut map = std::collections::HashMap::new();
+    collect_abstract_methods_walk(root, source, &mut map);
+    map
+}
+
+fn collect_abstract_methods_walk(
+    node: Node,
+    source: &[u8],
+    out: &mut std::collections::HashMap<String, HashSet<String>>,
+) {
+    let kind = node.kind();
+    let is_class = match kind {
+        "abstract_class_declaration" => true,
+        "class_declaration" | "class" => node.child_by_field_name("body").is_some(),
+        _ => false,
+    };
+    if is_class {
+        let class_name = node
+            .child_by_field_name("name")
+            .and_then(|n| n.utf8_text(source).ok())
+            .unwrap_or("<anonymous>")
+            .to_string();
+        let names = abstract_method_names(node, source);
+        if !names.is_empty() {
+            out.insert(class_name, names);
+        }
+    }
+    let mut cursor = node.walk();
+    for child in node.children(&mut cursor) {
+        collect_abstract_methods_walk(child, source, out);
+    }
+}
+
+/// Collect the names of concrete methods in `class_node`'s body that do NOT carry
+/// an `override` modifier.
+///
+/// Used by Refused Bequest detection to identify methods that implement abstract
+/// parent methods without using the `override` keyword.
+pub fn concrete_non_override_method_names(class_node: Node, source: &[u8]) -> HashSet<String> {
+    let mut names = HashSet::new();
+    let body = match class_node.child_by_field_name("body") {
+        Some(b) => b,
+        None => return names,
+    };
+    let mut cursor = body.walk();
+    for member in body.children(&mut cursor) {
+        if member.kind() == "method_definition" && !has_override_modifier(member) {
+            if let Some(name_node) = member.child_by_field_name("name") {
+                if let Ok(text) = name_node.utf8_text(source) {
+                    names.insert(text.to_string());
+                }
+            }
+        }
+    }
+    names
+}
+
+/// Per-class data needed by Refused Bequest to compute implicit overrides.
+#[derive(Debug, Clone)]
+pub struct ClassMethodInfo {
+    /// Class name.
+    pub class_name: String,
+    /// Names of abstract methods declared in this class.
+    pub abstract_method_names: HashSet<String>,
+    /// Names of concrete methods that do NOT carry `override`.
+    pub concrete_non_override_names: HashSet<String>,
+}
+
+/// Collect `ClassMethodInfo` for every named class in the file.
+///
+/// This is used by the Refused Bequest strategy to find abstract method
+/// implementations in child classes that omit the `override` keyword.
+pub fn collect_class_method_info(root: Node, source: &[u8]) -> Vec<ClassMethodInfo> {
+    let mut out = Vec::new();
+    collect_class_method_info_walk(root, source, &mut out);
+    out
+}
+
+fn collect_class_method_info_walk(node: Node, source: &[u8], out: &mut Vec<ClassMethodInfo>) {
+    let kind = node.kind();
+    let is_class = match kind {
+        "class_declaration" | "abstract_class_declaration" => true,
+        "class" => node.child_by_field_name("body").is_some(),
+        _ => false,
+    };
+    if is_class {
+        let class_name = node
+            .child_by_field_name("name")
+            .and_then(|n| n.utf8_text(source).ok())
+            .unwrap_or("<anonymous>")
+            .to_string();
+        let info = ClassMethodInfo {
+            class_name,
+            abstract_method_names: abstract_method_names(node, source),
+            concrete_non_override_names: concrete_non_override_method_names(node, source),
+        };
+        out.push(info);
+    }
+    let mut cursor = node.walk();
+    for child in node.children(&mut cursor) {
+        collect_class_method_info_walk(child, source, out);
+    }
 }
 
 // ── Tests ──────────────────────────────────────────────────────────────────

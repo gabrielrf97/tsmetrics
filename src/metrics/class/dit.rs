@@ -12,6 +12,17 @@ pub struct ClassDit {
     pub line: usize,
 }
 
+/// Return the direct parent name (from `extends`) for each named class in the file.
+///
+/// The map contains an entry for every class found (declarations and named class
+/// expressions).  The value is `None` when the class has no `extends` clause.
+pub fn collect_parent_map(root: Node, source: &[u8]) -> HashMap<String, Option<String>> {
+    collect_raw_classes(root, source)
+        .into_iter()
+        .map(|(name, parent, _line)| (name, parent))
+        .collect()
+}
+
 /// Compute the Depth of Inheritance Tree (DIT) for every class declared in a file.
 ///
 /// DIT is the maximum number of edges in the inheritance path from a class to the
@@ -83,7 +94,14 @@ fn collect_raw_classes(root: Node, source: &[u8]) -> Vec<(String, Option<String>
 
 fn walk_classes(node: Node, source: &[u8], out: &mut Vec<(String, Option<String>, usize)>) {
     let kind = node.kind();
-    if kind == "class_declaration" || kind == "abstract_class_declaration" {
+    let is_class = match kind {
+        "class_declaration" | "abstract_class_declaration" => true,
+        // Named class expressions: `const X = class ClassName extends Base {}`.
+        // The bare "class" keyword leaf also has kind "class", so require a body.
+        "class" => node.child_by_field_name("body").is_some(),
+        _ => false,
+    };
+    if is_class {
         if let Some(entry) = extract_class_entry(node, source) {
             out.push(entry);
         }
@@ -281,5 +299,32 @@ mod tests {
         assert_eq!(m["Base"], 0);
         assert_eq!(m["Mid"], 1);
         assert_eq!(m["Leaf"], 2);
+    }
+
+    // ── Named class expressions ───────────────────────────────────────────────
+    // Regression: `const X = class Foo extends Base {}` was silently dropped
+    // because walk_classes only visited `class_declaration` nodes.
+
+    #[test]
+    fn named_class_expression_no_parent_dit_is_zero() {
+        let m = dit_map("const Foo = class FooClass {}");
+        assert_eq!(m.get("FooClass").copied(), Some(0));
+    }
+
+    #[test]
+    fn named_class_expression_extends_dit_is_one() {
+        let src = "class Base {}\nconst Foo = class FooClass extends Base {}";
+        let m = dit_map(src);
+        assert_eq!(m["Base"], 0);
+        assert_eq!(m["FooClass"], 1);
+    }
+
+    #[test]
+    fn named_class_expression_in_deep_chain() {
+        let src = "class A {}\nclass B extends A {}\nconst C = class CClass extends B {}";
+        let m = dit_map(src);
+        assert_eq!(m["A"], 0);
+        assert_eq!(m["B"], 1);
+        assert_eq!(m["CClass"], 2);
     }
 }
