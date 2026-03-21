@@ -37,6 +37,14 @@ pub fn compute_class_tcc(root: Node, source: &[u8]) -> Vec<ClassTcc> {
     results
 }
 
+/// Compute TCC for a single class node, returning only the TCC score.
+///
+/// Works with any class kind: `class_declaration`, `abstract_class_declaration`,
+/// and class expressions (`class`).
+pub fn compute_tcc_for_class(class_node: Node, source: &[u8]) -> f64 {
+    measure_class(class_node, source).tcc
+}
+
 fn collect_classes(node: Node, source: &[u8], out: &mut Vec<ClassTcc>) {
     let is_class = match node.kind() {
         "class_declaration" => true,
