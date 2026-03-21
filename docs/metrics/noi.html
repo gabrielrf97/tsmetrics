@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>NOI — Number of Implemented Interfaces — TSM Docs</title>
+<link rel="stylesheet" href="../style.css">
+</head>
+<body>
+<div class="layout">
+<aside class="sidebar">
+<div class="sidebar-header">
+<a href="../index.html" class="logo">TSM</a>
+<p class="sidebar-subtitle">TypeScript Static Analyzer</p>
+</div>
+<nav class="sidebar-nav">
+<div class="nav-section">
+<div class="nav-section-title">Getting Started</div>
+<a href="../index.html">Introduction</a>
+<a href="../getting-started.html">Installation</a>
+<a href="../configuration.html">Configuration</a>
+<a href="../cli.html">CLI Reference</a>
+<a href="../output-formats.html">Output Formats</a>
+</div>
+<div class="nav-section">
+<div class="nav-section-title">Metrics</div>
+<a href="../metrics/index.html">Overview</a>
+<a href="../metrics/cyclomatic.html">Cyclomatic Complexity</a>
+<a href="../metrics/halstead.html">Halstead Volume</a>
+<a href="../metrics/maintainability.html">Maintainability Index</a>
+<a href="../metrics/wmc.html">WMC</a>
+<a href="../metrics/dit.html">DIT</a>
+<a href="../metrics/nom.html">NOM / NOAM / NOOM</a>
+<a href="../metrics/woc.html">WOC</a>
+<a href="../metrics/tcc.html">TCC</a>
+<a href="../metrics/cbo.html">CBO</a>
+<a href="../metrics/rfc.html">RFC</a>
+<a href="../metrics/noi.html" class="active">NOI</a>
+<a href="../metrics/used-components.html">Used Components</a>
+<a href="../metrics/jsx-nesting.html">JSX Nesting</a>
+<a href="../metrics/technical-debt.html">Technical Debt</a>
+</div>
+<div class="nav-section">
+<div class="nav-section-title">Strategies</div>
+<a href="../strategies/index.html">Overview</a>
+<a href="../strategies/god-class.html">God Class</a>
+<a href="../strategies/brain-method.html">Brain Method</a>
+<a href="../strategies/feature-envy.html">Feature Envy</a>
+<a href="../strategies/refused-bequest.html">Refused Bequest</a>
+</div>
+</nav>
+</aside>
+<main class="content">
+<div class="breadcrumb"><a href="../index.html">Home</a> / <a href="index.html">Metrics</a> / NOI</div>
+<a href="https://github.com/gabrielrf97/tsm/edit/main/docs/metrics/noi.html" class="edit-link" target="_blank">Edit on GitHub</a>
+
+<h1>NOI — Number of Implemented Interfaces</h1>
+<p class="badge">Class Metric &nbsp;|&nbsp; AST-based &nbsp;|&nbsp; Thresholds configurable</p>
+<p>Count of interfaces listed in the <code>implements</code> clause of a class declaration.</p>
+
+<h2>Formula</h2>
+<div class="formula">NOI = |named children in implements_clause|</div>
+
+<h2>TypeScript Example</h2>
+<pre><code><span class="kw">class</span> <span class="ty">HttpAdapter</span>
+  <span class="kw">implements</span> <span class="ty">IFetchable</span>, <span class="ty">IRetryable</span>, <span class="ty">ILoggable</span> {
+  <span class="cmt">// NOI = 3</span>
+}
+</code></pre>
+
+<div class="output-block">
+NOI: 3
+</div>
+
+<h2>Default Thresholds</h2>
+<table class="threshold-table">
+<thead><tr><th>Level</th><th>Default</th><th>Meaning</th></tr></thead>
+<tbody>
+<tr><td>Warning</td><td>3</td><td>Class has many interface contracts; verify LSP compliance</td></tr>
+<tr><td>Error</td><td>5</td><td>Class violates Interface Segregation Principle</td></tr>
+</tbody>
+</table>
+
+<h2>Configuration</h2>
+<div class="config-block">
+<pre><code><span class="cmt"># tsm.yaml</span>
+thresholds:
+  noi:
+    warning: 3
+    error:   5
+</code></pre>
+</div>
+
+<h2>Notes</h2>
+<ul>
+<li>Generic interfaces like <code>Comparable&lt;T&gt;</code> count as one interface.</li>
+<li>The <code>extends</code> clause (parent class) is <em>not</em> counted here — see <a href="dit.html">DIT</a>.</li>
+<li>Implementing the same interface twice is counted once.</li>
+</ul>
+
+<h2>Related metrics</h2>
+<p><a href="dit.html">DIT</a> · <a href="cbo.html">CBO</a> · <a href="wmc.html">WMC</a></p>
+
+<div class="page-nav"><a href="rfc.html" class="prev">← RFC</a><a href="used-components.html" class="next">Used Components →</a></div>
+</main>
+</div>
+</body>
+</html>

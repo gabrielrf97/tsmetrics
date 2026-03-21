@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Feature Envy — TSM Docs</title>
+<link rel="stylesheet" href="../style.css">
+</head>
+<body>
+<div class="layout">
+<aside class="sidebar">
+<div class="sidebar-header">
+<a href="../index.html" class="logo">TSM</a>
+<p class="sidebar-subtitle">TypeScript Static Analyzer</p>
+</div>
+<nav class="sidebar-nav">
+<div class="nav-section">
+<div class="nav-section-title">Getting Started</div>
+<a href="../index.html">Introduction</a>
+<a href="../getting-started.html">Installation</a>
+<a href="../configuration.html">Configuration</a>
+<a href="../cli.html">CLI Reference</a>
+<a href="../output-formats.html">Output Formats</a>
+</div>
+<div class="nav-section">
+<div class="nav-section-title">Metrics</div>
+<a href="../metrics/index.html">Overview</a>
+<a href="../metrics/cyclomatic.html">Cyclomatic Complexity</a>
+<a href="../metrics/halstead.html">Halstead Volume</a>
+<a href="../metrics/maintainability.html">Maintainability Index</a>
+<a href="../metrics/wmc.html">WMC</a>
+<a href="../metrics/dit.html">DIT</a>
+<a href="../metrics/nom.html">NOM / NOAM / NOOM</a>
+<a href="../metrics/woc.html">WOC</a>
+<a href="../metrics/tcc.html">TCC</a>
+<a href="../metrics/cbo.html">CBO</a>
+<a href="../metrics/rfc.html">RFC</a>
+<a href="../metrics/noi.html">NOI</a>
+<a href="../metrics/used-components.html">Used Components</a>
+<a href="../metrics/jsx-nesting.html">JSX Nesting</a>
+<a href="../metrics/technical-debt.html">Technical Debt</a>
+</div>
+<div class="nav-section">
+<div class="nav-section-title">Strategies</div>
+<a href="../strategies/index.html">Overview</a>
+<a href="../strategies/god-class.html">God Class</a>
+<a href="../strategies/brain-method.html">Brain Method</a>
+<a href="../strategies/feature-envy.html" class="active">Feature Envy</a>
+<a href="../strategies/refused-bequest.html">Refused Bequest</a>
+</div>
+</nav>
+</aside>
+<main class="content">
+<div class="breadcrumb"><a href="../index.html">Home</a> / <a href="index.html">Strategies</a> / Feature Envy</div>
+<a href="https://github.com/gabrielrf97/tsm/edit/main/docs/strategies/feature-envy.html" class="edit-link" target="_blank">Edit on GitHub</a>
+
+<h1>Feature Envy</h1>
+<p class="badge">Function Strategy &nbsp;|&nbsp; Multi-metric</p>
+<p>A method that accesses another class's <em>data</em> more than it accesses its own. The method "envies" a neighbour class, suggesting it belongs there instead.</p>
+
+<h2>Detection Rule</h2>
+<div class="detection-rule">
+ATFD &gt; 5 AND ATFD &gt; local_accesses
+</div>
+<table class="threshold-table">
+<thead><tr><th>Condition</th><th>Meaning</th></tr></thead>
+<tbody>
+<tr><td>ATFD &gt; 5</td><td>Substantial foreign data access (not just one or two reads)</td></tr>
+<tr><td>ATFD &gt; local_accesses</td><td>Foreign accesses exceed <code>this.x</code> accesses — more interested in others than in self</td></tr>
+</tbody>
+</table>
+
+<h2>Access counting rules</h2>
+<p><strong>ATFD (foreign)</strong> counts <code>obj.field</code> member expressions where the base is an external identifier (not <code>this</code> or <code>super</code>). Method calls like <code>obj.method()</code> are explicitly excluded — only <em>data</em> accesses count.</p>
+<p><strong>local_accesses</strong> counts <code>this.x</code> accesses where the access is not a method call (i.e., <code>this.method()</code> is excluded).</p>
+
+<h2>TypeScript Example</h2>
+<pre><code><span class="kw">class</span> <span class="ty">PriceCalculator</span> {
+  <span class="fn">calculateDiscount</span>(order: <span class="ty">Order</span>, customer: <span class="ty">Customer</span>) {
+    <span class="cmt">// Foreign accesses (ATFD=7):</span>
+    <span class="kw">const</span> base     = order.basePrice;     <span class="cmt">// +1</span>
+    <span class="kw">const</span> qty      = order.quantity;      <span class="cmt">// +1</span>
+    <span class="kw">const</span> country  = order.shipCountry;   <span class="cmt">// +1</span>
+    <span class="kw">const</span> tier     = customer.tier;       <span class="cmt">// +1</span>
+    <span class="kw">const</span> loyalty  = customer.loyaltyPts; <span class="cmt">// +1</span>
+    <span class="kw">const</span> created  = customer.createdAt;  <span class="cmt">// +1</span>
+    <span class="kw">const</span> override = customer.discountOverride; <span class="cmt">// +1</span>
+
+    <span class="cmt">// Local accesses (local=1):</span>
+    <span class="kw">const</span> rate = <span class="kw">this</span>.defaultRate;       <span class="cmt">// +1</span>
+
+    <span class="kw">return</span> base * (1 - rate);
+  }
+}
+<span class="cmt">// ATFD=7 > 5 ✓  AND  ATFD=7 > local=1 ✓  → Feature Envy</span>
+</code></pre>
+
+<h2>Remediation</h2>
+<ul>
+<li><strong>Move Method</strong> — move <code>calculateDiscount</code> into <code>Order</code> or <code>Customer</code>, whichever supplies more data.</li>
+<li><strong>Introduce Parameter Object</strong> — bundle the accessed fields into a single object and pass it in.</li>
+<li><strong>Extract Helper</strong> — if the method spans multiple foreign classes, extract one piece per class.</li>
+</ul>
+
+<h2>Related strategies</h2>
+<p><a href="god-class.html">God Class</a></p>
+<h2>Related metrics</h2>
+<p><a href="../metrics/tcc.html">TCC</a> · <a href="../metrics/wmc.html">WMC</a> · <a href="../metrics/cbo.html">CBO</a></p>
+
+<div class="page-nav"><a href="brain-method.html" class="prev">← Brain Method</a><a href="refused-bequest.html" class="next">Refused Bequest →</a></div>
+</main>
+</div>
+</body>
+</html>

@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>CLI Reference — TSM Docs</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div class="layout">
+    
+    <aside class="sidebar">
+      <div class="sidebar-header">
+        <a href="index.html" class="logo">TSM</a>
+        <p class="sidebar-subtitle">TypeScript Static Analyzer</p>
+      </div>
+      <nav class="sidebar-nav">
+        <div class="nav-section">
+          <div class="nav-section-title">Getting Started</div>
+          <a href="index.html">Introduction</a>
+          <a href="getting-started.html">Installation</a>
+          <a href="configuration.html">Configuration</a>
+          <a href="cli.html" class="active">CLI Reference</a>
+          <a href="output-formats.html">Output Formats</a>
+        </div>
+        <div class="nav-section">
+          <div class="nav-section-title">Metrics</div>
+          <a href="metrics/index.html">Overview</a>
+          <a href="metrics/cyclomatic.html">Cyclomatic Complexity</a>
+          <a href="metrics/halstead.html">Halstead Volume</a>
+          <a href="metrics/maintainability.html">Maintainability Index</a>
+          <a href="metrics/wmc.html">WMC</a>
+          <a href="metrics/dit.html">DIT</a>
+          <a href="metrics/nom.html">NOM / NOAM / NOOM</a>
+          <a href="metrics/woc.html">WOC</a>
+          <a href="metrics/tcc.html">TCC</a>
+          <a href="metrics/cbo.html">CBO</a>
+          <a href="metrics/rfc.html">RFC</a>
+          <a href="metrics/noi.html">NOI</a>
+          <a href="metrics/used-components.html">Used Components</a>
+          <a href="metrics/jsx-nesting.html">JSX Nesting</a>
+          <a href="metrics/technical-debt.html">Technical Debt</a>
+        </div>
+        <div class="nav-section">
+          <div class="nav-section-title">Strategies</div>
+          <a href="strategies/index.html">Overview</a>
+          <a href="strategies/god-class.html">God Class</a>
+          <a href="strategies/brain-method.html">Brain Method</a>
+          <a href="strategies/feature-envy.html">Feature Envy</a>
+          <a href="strategies/refused-bequest.html">Refused Bequest</a>
+        </div>
+      </nav>
+    </aside>
+    <main class="content">
+
+      <div class="breadcrumb">
+        <a href="index.html">Docs</a><span class="breadcrumb-sep">›</span>
+        <span>CLI Reference</span>
+      </div>
+      <div class="page-header">
+        <h1>CLI Reference</h1>
+        <p class="tagline">All flags and options for <code>ts-static-analyzer</code>.</p>
+      </div>
+
+      <h2>Synopsis</h2>
+      <div class="code-block">
+        <div class="code-block-header">bash</div>
+        <pre>ts-static-analyzer analyze &lt;PATH&gt;... [OPTIONS]</pre>
+      </div>
+
+      <h2>Subcommands</h2>
+      <p>Currently one subcommand: <code>analyze</code>.</p>
+
+      <h2>Arguments</h2>
+      <table class="threshold-table">
+        <thead><tr><th>Argument</th><th>Required</th><th>Description</th></tr></thead>
+        <tbody>
+          <tr><td><code>&lt;PATH&gt;...</code></td><td>Yes</td><td>One or more file paths or directories to analyze (recursive)</td></tr>
+        </tbody>
+      </table>
+
+      <h2>Options</h2>
+      <table class="threshold-table">
+        <thead><tr><th>Flag</th><th>Short</th><th>Default</th><th>Description</th></tr></thead>
+        <tbody>
+          <tr><td><code>--format &lt;FORMAT&gt;</code></td><td><code>-f</code></td><td><code>table</code></td><td>Output format: <code>table</code>, <code>json</code>, <code>csv</code>, <code>html</code></td></tr>
+          <tr><td><code>--verbose</code></td><td><code>-v</code></td><td>off</td><td>Report skipped files to stderr</td></tr>
+          <tr><td><code>--min-complexity &lt;N&gt;</code></td><td>—</td><td>none</td><td>Only show functions with CC &ge; N</td></tr>
+          <tr><td><code>--min-loc &lt;N&gt;</code></td><td>—</td><td>none</td><td>Only show functions with LOC &ge; N</td></tr>
+          <tr><td><code>--timing</code></td><td>—</td><td>off</td><td>Print elapsed time and thread count to stderr after analysis</td></tr>
+          <tr><td><code>--version</code></td><td>—</td><td>—</td><td>Print version and exit</td></tr>
+          <tr><td><code>--help</code></td><td><code>-h</code></td><td>—</td><td>Print help and exit</td></tr>
+        </tbody>
+      </table>
+
+      <h2>Examples</h2>
+      <div class="code-block">
+        <div class="code-block-header">bash</div>
+        <pre><span class="cmt"># Table output (default)</span>
+ts-static-analyzer analyze ./src
+
+<span class="cmt"># JSON output — pipe to jq for querying</span>
+ts-static-analyzer analyze ./src --format json | jq '.files[].functions[] | select(.cyclomatic_complexity > 10)'
+
+<span class="cmt"># CSV output — import into spreadsheet</span>
+ts-static-analyzer analyze ./src --format csv > metrics.csv
+
+<span class="cmt"># Self-contained HTML report</span>
+ts-static-analyzer analyze ./src --format html > report.html
+
+<span class="cmt"># Filter to complex functions only</span>
+ts-static-analyzer analyze ./src --min-complexity 10
+
+<span class="cmt"># Show timing info</span>
+ts-static-analyzer analyze ./src --timing
+
+<span class="cmt"># Verbose — see skipped files</span>
+ts-static-analyzer analyze ./src --verbose 2>&amp;1 | grep SKIP</pre>
+      </div>
+
+      <h2>Exit codes</h2>
+      <table class="threshold-table">
+        <thead><tr><th>Code</th><th>Meaning</th></tr></thead>
+        <tbody>
+          <tr><td><code>0</code></td><td>Success</td></tr>
+          <tr><td><code>1</code></td><td>Error (parse failure, invalid config, etc.)</td></tr>
+        </tbody>
+      </table>
+
+      <div class="note">
+        <strong>Note:</strong> When using <code>--min-complexity</code> or <code>--min-loc</code>, the summary counts (files, functions) reflect only the filtered results, not the total analyzed.
+      </div>
+
+      <div class="page-nav">
+        <a href="configuration.html" class="prev">
+          <span class="nav-dir">← Previous</span><span class="nav-title">Configuration</span>
+        </a>
+        <a href="output-formats.html" class="next">
+          <span class="nav-dir">Next</span><span class="nav-title">Output Formats →</span>
+        </a>
+      </div>
+      <a href="https://github.com/gabrielrf97/tsm/edit/main/docs/cli.html" class="edit-link">Edit on GitHub</a>
+
+    </main>
+  </div>
+</body>
+</html>

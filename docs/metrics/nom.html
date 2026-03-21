@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>NOM / NOAM / NOOM — TSM Docs</title>
+<link rel="stylesheet" href="../style.css">
+</head>
+<body>
+<div class="layout">
+<nav class="sidebar">
+<div class="sidebar-header"><a href="../index.html" class="logo">TSM</a></div>
+<a href="../index.html">Home</a>
+<a href="../getting-started.html">Getting Started</a>
+<a href="../configuration.html">Configuration</a>
+<a href="../cli.html">CLI Reference</a>
+<a href="../output-formats.html">Output Formats</a>
+<div class="nav-section">Metrics</div>
+<a href="../metrics/cyclomatic.html">Cyclomatic Complexity</a>
+<a href="../metrics/halstead.html">Halstead Volume</a>
+<a href="../metrics/maintainability.html">Maintainability Index</a>
+<a href="../metrics/wmc.html">WMC</a>
+<a href="../metrics/dit.html">DIT</a>
+<a href="../metrics/nom.html" class="active">NOM / NOAM / NOOM</a>
+<a href="../metrics/woc.html">WOC</a>
+<a href="../metrics/tcc.html">TCC</a>
+<a href="../metrics/cbo.html">CBO</a>
+<a href="../metrics/rfc.html">RFC</a>
+<a href="../metrics/noi.html">NOI</a>
+<a href="../metrics/used-components.html">Used Components</a>
+<a href="../metrics/jsx-nesting.html">JSX Nesting</a>
+<a href="../metrics/technical-debt.html">Technical Debt</a>
+<div class="nav-section">Strategies</div>
+<a href="../strategies/index.html">Overview</a>
+<a href="../strategies/god-class.html">God Class</a>
+<a href="../strategies/brain-method.html">Brain Method</a>
+<a href="../strategies/feature-envy.html">Feature Envy</a>
+<a href="../strategies/refused-bequest.html">Refused Bequest</a>
+
+</nav>
+<main class="content">
+<div class="breadcrumb"><a href="../index.html">Home</a> / <a href="index.html">Metrics</a> / NOM</div>
+<a href="https://github.com/gabrielrf97/tsm/edit/main/docs/metrics/nom.html" class="edit-link" target="_blank">Edit on GitHub</a>
+
+<h1>NOM / NOAM / NOOM</h1>
+<p class="badge">Class Metric &nbsp;|&nbsp; AST-based</p>
+<p>Three related counts that describe the method landscape of a class:</p>
+<table class="threshold-table">
+<thead><tr><th>Metric</th><th>Full Name</th><th>Description</th></tr></thead>
+<tbody>
+<tr><td><strong>NOM</strong></td><td>Number of Methods</td><td>Total methods in the class body, including abstract methods (NOM = NOAM + NOOM)</td></tr>
+<tr><td><strong>NOAM</strong></td><td>Number of Added Methods</td><td>Concrete methods that are new (not overrides of a parent)</td></tr>
+<tr><td><strong>NOOM</strong></td><td>Number of Overriding Methods</td><td>Concrete methods declared with the <code>override</code> keyword</td></tr>
+</tbody>
+</table>
+
+<h2>Formula</h2>
+<div class="formula">NOM = NOAM + NOOM</div>
+
+<h2>What it measures</h2>
+<p>A high NOM indicates a class carries many responsibilities. The split between NOAM and NOOM reveals whether the class extends a parent's contract (<em>override-heavy</em>) or adds entirely new behaviour (<em>add-heavy</em>).</p>
+<p>Used by the <strong>Refused Bequest</strong> strategy to detect subclasses that barely override anything from their parent.</p>
+
+<h2>TypeScript Example</h2>
+<pre><code><span class="kw">class</span> <span class="ty">Animal</span> {
+  <span class="fn">speak</span>(): <span class="ty">string</span> { <span class="kw">return</span> <span class="str">"..."</span>; }   <span class="cmt">// abstract baseline</span>
+  <span class="fn">eat</span>():   <span class="ty">void</span>   { }
+}
+
+<span class="kw">class</span> <span class="ty">Dog</span> <span class="kw">extends</span> <span class="ty">Animal</span> {
+  <span class="kw">override</span> <span class="fn">speak</span>(): <span class="ty">string</span> { <span class="kw">return</span> <span class="str">"Woof"</span>; }  <span class="cmt">// NOOM</span>
+  <span class="fn">fetch</span>(): <span class="ty">void</span> { }                              <span class="cmt">// NOAM</span>
+  <span class="fn">sit</span>():   <span class="ty">void</span> { }                              <span class="cmt">// NOAM</span>
+}
+<span class="cmt">// Dog: NOM=3, NOAM=2, NOOM=1</span>
+</code></pre>
+
+<h2>Thresholds</h2>
+<p>NOM, NOAM, and NOOM are informational — they are not directly threshold-checked. However they drive the <strong>Refused Bequest</strong> strategy (override ratio &lt; 0.33 with DIT &gt; 0).</p>
+
+<h2>Notes</h2>
+<ul>
+<li>Abstract methods (<code>abstract_method_signature</code> nodes) ARE included in NOM and count toward NOAM. Only interface method signatures defined outside a class body are excluded.</li>
+<li>Static methods are included.</li>
+<li>Constructor is included in NOAM.</li>
+<li>Only the <code>override</code> keyword triggers NOOM; implicit overrides (no keyword) count as NOAM.</li>
+</ul>
+
+<h2>Related metrics</h2>
+<p><a href="dit.html">DIT</a> · <a href="wmc.html">WMC</a> · <a href="woc.html">WOC</a> · <a href="../strategies/refused-bequest.html">Refused Bequest strategy</a></p>
+
+<div class="page-nav"><a href="dit.html" class="prev">← DIT</a><a href="woc.html" class="next">WOC →</a></div>
+</main>
+</div>
+</body>
+</html>

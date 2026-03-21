@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Technical Debt — TSM Docs</title>
+<link rel="stylesheet" href="../style.css">
+</head>
+<body>
+<div class="layout">
+<nav class="sidebar">
+<div class="sidebar-header"><a href="../index.html" class="logo">TSM</a></div>
+<a href="../index.html">Home</a>
+<a href="../getting-started.html">Getting Started</a>
+<a href="../configuration.html">Configuration</a>
+<a href="../cli.html">CLI Reference</a>
+<a href="../output-formats.html">Output Formats</a>
+<div class="nav-section">Metrics</div>
+<a href="../metrics/cyclomatic.html">Cyclomatic Complexity</a>
+<a href="../metrics/halstead.html">Halstead Volume</a>
+<a href="../metrics/maintainability.html">Maintainability Index</a>
+<a href="../metrics/wmc.html">WMC</a>
+<a href="../metrics/dit.html">DIT</a>
+<a href="../metrics/nom.html">NOM / NOAM / NOOM</a>
+<a href="../metrics/woc.html">WOC</a>
+<a href="../metrics/tcc.html">TCC</a>
+<a href="../metrics/cbo.html">CBO</a>
+<a href="../metrics/rfc.html">RFC</a>
+<a href="../metrics/noi.html">NOI</a>
+<a href="../metrics/used-components.html">Used Components</a>
+<a href="../metrics/jsx-nesting.html">JSX Nesting</a>
+<a href="../metrics/technical-debt.html" class="active">Technical Debt</a>
+<div class="nav-section">Strategies</div>
+<a href="../strategies/index.html">Overview</a>
+<a href="../strategies/god-class.html">God Class</a>
+<a href="../strategies/brain-method.html">Brain Method</a>
+<a href="../strategies/feature-envy.html">Feature Envy</a>
+<a href="../strategies/refused-bequest.html">Refused Bequest</a>
+
+</nav>
+<main class="content">
+<div class="breadcrumb"><a href="../index.html">Home</a> / <a href="index.html">Metrics</a> / Technical Debt</div>
+<a href="https://github.com/gabrielrf97/tsm/edit/main/docs/metrics/technical-debt.html" class="edit-link" target="_blank">Edit on GitHub</a>
+
+<h1>Technical Debt</h1>
+<p class="badge">File Metric &nbsp;|&nbsp; Derived</p>
+<p>An estimate of remediation effort, derived from the Maintainability Index and Halstead Volume. Unlike effort-based models, this score is dimensionless — use it for relative comparison across files.</p>
+
+<h2>Formula</h2>
+<div class="formula">debt_f(MI, HV) = max(0, 1 − MI/100) × √(HV + 1)</div>
+<div class="formula">total_debt = Σ debt_f over all functions in the file</div>
+<div class="formula">debt_per_100_sloc = total_debt / sloc × 100</div>
+<p>A function with a perfect MI score (100) contributes zero debt. As MI drops toward 0 and HV grows, debt rises sharply.</p>
+
+<h2>Interpretation</h2>
+<table class="threshold-table">
+<thead><tr><th>debt_per_100_sloc</th><th>Interpretation</th></tr></thead>
+<tbody>
+<tr><td>0 – 5</td><td>Excellent — high maintainability, simple code</td></tr>
+<tr><td>5 – 20</td><td>Acceptable — some complexity, watch trending files</td></tr>
+<tr><td>20 – 50</td><td>Concerning — schedule refactoring soon</td></tr>
+<tr><td>&gt; 50</td><td>Critical — difficult to maintain, high bug risk</td></tr>
+</tbody>
+</table>
+
+<h2>TypeScript Example</h2>
+<pre><code><span class="cmt">// Simple arrow function</span>
+<span class="kw">const</span> <span class="fn">double</span> = (x: <span class="ty">number</span>) =&gt; x * 2;
+<span class="cmt">// MI ≈ 95, HV ≈ 12 → debt_f ≈ (1-0.95) × √13 ≈ 0.18</span>
+
+<span class="cmt">// Complex function with nested conditions</span>
+<span class="kw">function</span> <span class="fn">parseConfig</span>(raw: <span class="ty">string</span>): <span class="ty">Config</span> {
+  <span class="cmt">// 80 LOC, CC=12, HV=520</span>
+}
+<span class="cmt">// MI ≈ 42, HV ≈ 520 → debt_f ≈ (1-0.42) × √521 ≈ 13.2</span>
+</code></pre>
+
+<h2>Notes</h2>
+<ul>
+<li>SLOC (source lines of code) excludes blank lines and comment-only lines.</li>
+<li>The <code>per_100_sloc</code> normalisation allows fair comparison between files of different sizes.</li>
+<li>Functions with HV = 0 still contribute debt when MI &lt; 100: <code>debt_f = (1 − MI/100) × √(0+1) = 1 − MI/100</code>. Only a perfect MI of 100 reduces the contribution to zero.</li>
+</ul>
+
+<h2>Related metrics</h2>
+<p><a href="maintainability.html">Maintainability Index</a> · <a href="halstead.html">Halstead Volume</a> · <a href="cyclomatic.html">Cyclomatic Complexity</a></p>
+
+<div class="page-nav"><a href="jsx-nesting.html" class="prev">← JSX Nesting</a><a href="../strategies/index.html" class="next">Strategies →</a></div>
+</main>
+</div>
+</body>
+</html>

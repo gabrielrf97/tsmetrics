@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Maintainability Index — TSM Docs</title>
+  <link rel="stylesheet" href="../style.css">
+</head>
+<body>
+  <div class="layout">
+    
+    <aside class="sidebar">
+      <div class="sidebar-header">
+        <a href="../index.html" class="logo">TSM</a>
+        <p class="sidebar-subtitle">TypeScript Static Analyzer</p>
+      </div>
+      <nav class="sidebar-nav">
+        <div class="nav-section">
+          <div class="nav-section-title">Getting Started</div>
+          <a href="../index.html">Introduction</a>
+          <a href="../getting-started.html">Installation</a>
+          <a href="../configuration.html">Configuration</a>
+          <a href="../cli.html">CLI Reference</a>
+          <a href="../output-formats.html">Output Formats</a>
+        </div>
+        <div class="nav-section">
+          <div class="nav-section-title">Metrics</div>
+          <a href="../metrics/index.html">Overview</a>
+          <a href="../metrics/cyclomatic.html">Cyclomatic Complexity</a>
+          <a href="../metrics/halstead.html">Halstead Volume</a>
+          <a href="../metrics/maintainability.html" class="active">Maintainability Index</a>
+          <a href="../metrics/wmc.html">WMC</a>
+          <a href="../metrics/dit.html">DIT</a>
+          <a href="../metrics/nom.html">NOM / NOAM / NOOM</a>
+          <a href="../metrics/woc.html">WOC</a>
+          <a href="../metrics/tcc.html">TCC</a>
+          <a href="../metrics/cbo.html">CBO</a>
+          <a href="../metrics/rfc.html">RFC</a>
+          <a href="../metrics/noi.html">NOI</a>
+          <a href="../metrics/used-components.html">Used Components</a>
+          <a href="../metrics/jsx-nesting.html">JSX Nesting</a>
+          <a href="../metrics/technical-debt.html">Technical Debt</a>
+        </div>
+        <div class="nav-section">
+          <div class="nav-section-title">Strategies</div>
+          <a href="../strategies/index.html">Overview</a>
+          <a href="../strategies/god-class.html">God Class</a>
+          <a href="../strategies/brain-method.html">Brain Method</a>
+          <a href="../strategies/feature-envy.html">Feature Envy</a>
+          <a href="../strategies/refused-bequest.html">Refused Bequest</a>
+        </div>
+      </nav>
+    </aside>
+    <main class="content">
+
+      <div class="breadcrumb">
+        <a href="../index.html">Docs</a><span class="breadcrumb-sep">›</span>
+        <a href="index.html">Metrics</a><span class="breadcrumb-sep">›</span>
+        <span>Maintainability Index</span>
+      </div>
+      <div class="page-header">
+        <span class="badge badge-function">Function-level</span>
+        <h1>Maintainability Index</h1>
+        <p class="tagline">A composite score from 0–100 that combines Halstead Volume, Cyclomatic Complexity, and LOC.</p>
+      </div>
+
+      <h2>Formula</h2>
+      <div class="formula">
+<span class="comment"># SEI / Visual Studio variant, normalized to 0–100</span>
+<span class="var">MI_raw</span> = <span class="num">171</span> − <span class="num">5.2</span> × ln(<span class="var">HV</span>) − <span class="num">0.23</span> × <span class="var">CC</span> − <span class="num">16.2</span> × ln(<span class="var">LOC</span>)
+<span class="var">MI</span>     = max(<span class="num">0</span>, (<span class="var">MI_raw</span> / <span class="num">171</span>) × <span class="num">100</span>)
+
+<span class="comment">Edge cases:
+  HV = 0  → ln(HV) term treated as 0 (no volume → no penalty)
+  LOC = 0 → treat as 1 to avoid ln(0) = −∞</span>
+      </div>
+      <p>Where <strong>HV</strong> = Halstead Volume, <strong>CC</strong> = Cyclomatic Complexity, <strong>LOC</strong> = lines of code.</p>
+
+      <h2>What it measures</h2>
+      <p>The Maintainability Index (MI) provides a single numeric estimate of how easy a function is to maintain. Higher values (→100) indicate clean, simple code; lower values (→0) indicate complex, difficult-to-maintain code.</p>
+      <p>MI was originally proposed by Oman and Hagemeister (1991) and later adopted by Microsoft as the Visual Studio variant used here — normalized to the 0–100 range.</p>
+
+      <h2>How it's calculated in TSM</h2>
+      <ol>
+        <li>Compute <a href="halstead.html">Halstead Volume</a> for the function (from the AST)</li>
+        <li>Compute <a href="cyclomatic.html">Cyclomatic Complexity</a> for the function</li>
+        <li>Count <code>LOC</code> (lines spanned by the function node, including blank/comment lines)</li>
+        <li>Apply the formula above</li>
+        <li>Clamp result to [0, 100]</li>
+      </ol>
+      <p>Nested functions are treated as separate units (consistent with Halstead and CC).</p>
+
+      <h2>TypeScript example</h2>
+      <div class="code-block">
+        <div class="code-block-header">TypeScript</div>
+        <pre><span class="cmt">// Simple function — high MI</span>
+<span class="kw">function</span> <span class="fn">add</span>(a: <span class="ty">number</span>, b: <span class="ty">number</span>): <span class="ty">number</span> {
+  <span class="kw">return</span> a + b;
+}
+<span class="cmt">// HV ≈ 16, CC = 1, LOC = 3
+// MI_raw ≈ 171 - 5.2×ln(16) - 0.23×1 - 16.2×ln(3)
+//        ≈ 171 - 14.4 - 0.23 - 17.8 ≈ 138.6
+// MI ≈ (138.6/171)×100 ≈ 81</span>
+
+<span class="cmt">// Complex function — lower MI (many branches, long body)</span>
+<span class="kw">function</span> <span class="fn">processData</span>(data: <span class="ty">number</span>[]): <span class="ty">number</span> {
+  <span class="kw">let</span> result = <span class="num">0</span>;
+  <span class="kw">for</span> (<span class="kw">let</span> i = <span class="num">0</span>; i &lt; data.length; i++) {
+    <span class="kw">if</span> (data[i] &gt; <span class="num">0</span>) {
+      result += data[i] * <span class="num">2</span>;
+    } <span class="kw">else if</span> (data[i] &lt; <span class="num">-10</span>) {
+      result -= data[i];
+    }
+  }
+  <span class="kw">return</span> result;
+}</pre>
+      </div>
+
+      <h2>Interpreting values</h2>
+      <table class="threshold-table">
+        <thead><tr><th>MI range</th><th>Interpretation</th></tr></thead>
+        <tbody>
+          <tr><td>85–100</td><td>Highly maintainable</td></tr>
+          <tr><td>65–84</td><td>Moderately maintainable</td></tr>
+          <tr><td>40–64</td><td>Difficult to maintain</td></tr>
+          <tr><td>0–39</td><td>Very difficult to maintain — refactoring recommended</td></tr>
+        </tbody>
+      </table>
+
+      <h2>Thresholds</h2>
+      <p>MI has no configurable violation thresholds. It is included in JSON output and used as input to <a href="technical-debt.html">Technical Debt</a>.</p>
+
+      <h2>References</h2>
+      <ul>
+        <li>Oman, P. &amp; Hagemeister, J. (1991). Metrics for assessing a software system's maintainability. Proc. ICSM.</li>
+        <li>Coleman, D. et al. (1994). Using metrics to evaluate software system maintainability. <em>IEEE Computer</em>.</li>
+      </ul>
+
+      <h2>Related metrics</h2>
+      <p>
+        <a href="halstead.html">Halstead Volume</a> ·
+        <a href="cyclomatic.html">Cyclomatic Complexity</a> ·
+        <a href="technical-debt.html">Technical Debt</a>
+      </p>
+
+      <div class="page-nav">
+        <a href="halstead.html" class="prev">
+          <span class="nav-dir">← Previous</span><span class="nav-title">Halstead Volume</span>
+        </a>
+        <a href="wmc.html" class="next">
+          <span class="nav-dir">Next</span><span class="nav-title">WMC →</span>
+        </a>
+      </div>
+      <a href="https://github.com/gabrielrf97/tsm/edit/main/docs/metrics/maintainability.html" class="edit-link">Edit on GitHub</a>
+
+    </main>
+  </div>
+</body>
+</html>

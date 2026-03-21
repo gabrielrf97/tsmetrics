@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Output Formats — TSM Docs</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div class="layout">
+    
+    <aside class="sidebar">
+      <div class="sidebar-header">
+        <a href="index.html" class="logo">TSM</a>
+        <p class="sidebar-subtitle">TypeScript Static Analyzer</p>
+      </div>
+      <nav class="sidebar-nav">
+        <div class="nav-section">
+          <div class="nav-section-title">Getting Started</div>
+          <a href="index.html">Introduction</a>
+          <a href="getting-started.html">Installation</a>
+          <a href="configuration.html">Configuration</a>
+          <a href="cli.html">CLI Reference</a>
+          <a href="output-formats.html" class="active">Output Formats</a>
+        </div>
+        <div class="nav-section">
+          <div class="nav-section-title">Metrics</div>
+          <a href="metrics/index.html">Overview</a>
+          <a href="metrics/cyclomatic.html">Cyclomatic Complexity</a>
+          <a href="metrics/halstead.html">Halstead Volume</a>
+          <a href="metrics/maintainability.html">Maintainability Index</a>
+          <a href="metrics/wmc.html">WMC</a>
+          <a href="metrics/dit.html">DIT</a>
+          <a href="metrics/nom.html">NOM / NOAM / NOOM</a>
+          <a href="metrics/woc.html">WOC</a>
+          <a href="metrics/tcc.html">TCC</a>
+          <a href="metrics/cbo.html">CBO</a>
+          <a href="metrics/rfc.html">RFC</a>
+          <a href="metrics/noi.html">NOI</a>
+          <a href="metrics/used-components.html">Used Components</a>
+          <a href="metrics/jsx-nesting.html">JSX Nesting</a>
+          <a href="metrics/technical-debt.html">Technical Debt</a>
+        </div>
+        <div class="nav-section">
+          <div class="nav-section-title">Strategies</div>
+          <a href="strategies/index.html">Overview</a>
+          <a href="strategies/god-class.html">God Class</a>
+          <a href="strategies/brain-method.html">Brain Method</a>
+          <a href="strategies/feature-envy.html">Feature Envy</a>
+          <a href="strategies/refused-bequest.html">Refused Bequest</a>
+        </div>
+      </nav>
+    </aside>
+    <main class="content">
+
+      <div class="breadcrumb">
+        <a href="index.html">Docs</a><span class="breadcrumb-sep">›</span>
+        <span>Output Formats</span>
+      </div>
+      <div class="page-header">
+        <h1>Output Formats</h1>
+        <p class="tagline">TSM supports four output formats: <code>table</code>, <code>json</code>, <code>csv</code>, and <code>html</code>.</p>
+      </div>
+
+      <h2>Table (default)</h2>
+      <p>A UTF-8 box-drawing table suitable for terminal viewing. Complexity values are color-coded: <span class="sev-ok">green</span> (&lt;5), <span class="sev-warning">yellow</span> (5–9), <span class="sev-error">red</span> (&ge;10).</p>
+      <div class="output-block">Analyzed 2 file(s) — 4 function(s) — 120 LOC total
+
+╒══════════════╤══════════════╤══════╤═════╤══════╤════════════╤═════════╤════════╕
+│ File         │ Function     │ Line │ LOC │ SLOC │ Complexity │ Nesting │ Params │
+╞══════════════╪══════════════╪══════╪═════╪══════╪════════════╪═════════╪════════╡
+│ src/a.ts     │ simple       │   10 │  15 │   12 │          2 │       1 │      1 │
+│ src/b.ts     │ processData  │    5 │  55 │   47 │         11 │       4 │      3 │
+╘══════════════╧══════════════╧══════╧═════╧══════╧════════════╧═════════╧════════╛</div>
+
+      <h2>JSON</h2>
+      <p>Structured JSON output with the full analysis result, including per-file metrics, per-function metrics, and all threshold violations.</p>
+      <div class="code-block">
+        <div class="code-block-header">json</div>
+        <pre>{
+  <span class="str">"total_files"</span>: <span class="num">2</span>,
+  <span class="str">"total_functions"</span>: <span class="num">4</span>,
+  <span class="str">"total_loc"</span>: <span class="num">120</span>,
+  <span class="str">"files"</span>: [
+    {
+      <span class="str">"path"</span>: <span class="str">"src/a.ts"</span>,
+      <span class="str">"total_loc"</span>: <span class="num">60</span>,
+      <span class="str">"total_sloc"</span>: <span class="num">50</span>,
+      <span class="str">"function_count"</span>: <span class="num">2</span>,
+      <span class="str">"functions"</span>: [
+        {
+          <span class="str">"name"</span>: <span class="str">"processData"</span>,
+          <span class="str">"file"</span>: <span class="str">"src/a.ts"</span>,
+          <span class="str">"line"</span>: <span class="num">5</span>,
+          <span class="str">"loc"</span>: <span class="num">55</span>,
+          <span class="str">"sloc"</span>: <span class="num">47</span>,
+          <span class="str">"cyclomatic_complexity"</span>: <span class="num">11</span>,
+          <span class="str">"max_nesting"</span>: <span class="num">4</span>,
+          <span class="str">"param_count"</span>: <span class="num">3</span>
+        }
+      ]
+    }
+  ],
+  <span class="str">"violations"</span>: [
+    {
+      <span class="str">"file"</span>: <span class="str">"src/a.ts"</span>,
+      <span class="str">"entity"</span>: <span class="str">"processData"</span>,
+      <span class="str">"line"</span>: <span class="num">5</span>,
+      <span class="str">"metric"</span>: <span class="str">"cyclomatic_complexity"</span>,
+      <span class="str">"value"</span>: <span class="num">11</span>,
+      <span class="str">"threshold"</span>: <span class="num">10</span>,
+      <span class="str">"severity"</span>: <span class="str">"warning"</span>
+    }
+  ]
+}</pre>
+      </div>
+
+      <h2>CSV</h2>
+      <p>RFC 4180-compliant CSV. Header row followed by one row per function. Fields containing commas or quotes are properly quoted.</p>
+      <div class="output-block">file,function,line,loc,sloc,complexity,nesting,params
+src/a.ts,simple,10,15,12,2,1,1
+src/b.ts,processData,5,55,47,11,4,3</div>
+      <p>Violations are <em>not</em> included in CSV output. Use JSON for the full picture.</p>
+
+      <h2>HTML</h2>
+      <p>A self-contained HTML report with inline CSS and JavaScript. Features:</p>
+      <ul>
+        <li>Sortable columns (click any header)</li>
+        <li>Color-coded complexity badges (green/yellow/red)</li>
+        <li>Violations table (if any thresholds exceeded)</li>
+        <li>No external dependencies — single file, works offline</li>
+      </ul>
+      <div class="code-block">
+        <div class="code-block-header">bash</div>
+        <pre>ts-static-analyzer analyze ./src --format html > report.html
+open report.html</pre>
+      </div>
+
+      <div class="page-nav">
+        <a href="cli.html" class="prev">
+          <span class="nav-dir">← Previous</span><span class="nav-title">CLI Reference</span>
+        </a>
+        <a href="metrics/index.html" class="next">
+          <span class="nav-dir">Next</span><span class="nav-title">Metrics Overview →</span>
+        </a>
+      </div>
+      <a href="https://github.com/gabrielrf97/tsm/edit/main/docs/output-formats.html" class="edit-link">Edit on GitHub</a>
+
+    </main>
+  </div>
+</body>
+</html>

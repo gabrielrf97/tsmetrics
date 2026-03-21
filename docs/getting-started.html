@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Getting Started — TSM Docs</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div class="layout">
+    
+    <aside class="sidebar">
+      <div class="sidebar-header">
+        <a href="index.html" class="logo">TSM</a>
+        <p class="sidebar-subtitle">TypeScript Static Analyzer</p>
+      </div>
+      <nav class="sidebar-nav">
+        <div class="nav-section">
+          <div class="nav-section-title">Getting Started</div>
+          <a href="index.html">Introduction</a>
+          <a href="getting-started.html" class="active">Installation</a>
+          <a href="configuration.html">Configuration</a>
+          <a href="cli.html">CLI Reference</a>
+          <a href="output-formats.html">Output Formats</a>
+        </div>
+        <div class="nav-section">
+          <div class="nav-section-title">Metrics</div>
+          <a href="metrics/index.html">Overview</a>
+          <a href="metrics/cyclomatic.html">Cyclomatic Complexity</a>
+          <a href="metrics/halstead.html">Halstead Volume</a>
+          <a href="metrics/maintainability.html">Maintainability Index</a>
+          <a href="metrics/wmc.html">WMC</a>
+          <a href="metrics/dit.html">DIT</a>
+          <a href="metrics/nom.html">NOM / NOAM / NOOM</a>
+          <a href="metrics/woc.html">WOC</a>
+          <a href="metrics/tcc.html">TCC</a>
+          <a href="metrics/cbo.html">CBO</a>
+          <a href="metrics/rfc.html">RFC</a>
+          <a href="metrics/noi.html">NOI</a>
+          <a href="metrics/used-components.html">Used Components</a>
+          <a href="metrics/jsx-nesting.html">JSX Nesting</a>
+          <a href="metrics/technical-debt.html">Technical Debt</a>
+        </div>
+        <div class="nav-section">
+          <div class="nav-section-title">Strategies</div>
+          <a href="strategies/index.html">Overview</a>
+          <a href="strategies/god-class.html">God Class</a>
+          <a href="strategies/brain-method.html">Brain Method</a>
+          <a href="strategies/feature-envy.html">Feature Envy</a>
+          <a href="strategies/refused-bequest.html">Refused Bequest</a>
+        </div>
+      </nav>
+    </aside>
+    <main class="content">
+
+      <div class="breadcrumb">
+        <a href="index.html">Docs</a>
+        <span class="breadcrumb-sep">›</span>
+        <span>Getting Started</span>
+      </div>
+      <div class="page-header">
+        <h1>Getting Started</h1>
+        <p class="tagline">Install TSM and run your first analysis in under two minutes.</p>
+      </div>
+
+      <h2>Prerequisites</h2>
+      <ul>
+        <li>Rust 1.70+ (install via <a href="https://rustup.rs">rustup.rs</a>)</li>
+        <li>TypeScript source files (<code>.ts</code> or <code>.tsx</code>)</li>
+      </ul>
+
+      <h2>Installation</h2>
+      <h3>Build from source</h3>
+      <div class="code-block">
+        <div class="code-block-header">bash</div>
+        <pre>git clone https://github.com/gabrielrf97/tsm.git
+cd tsm
+cargo build --release
+<span class="cmt"># Binary at target/release/ts-static-analyzer</span></pre>
+      </div>
+
+      <h3>Install globally</h3>
+      <div class="code-block">
+        <div class="code-block-header">bash</div>
+        <pre>cargo install --path .</pre>
+      </div>
+
+      <h2>First Analysis</h2>
+      <p>Point TSM at a TypeScript file or directory:</p>
+      <div class="code-block">
+        <div class="code-block-header">bash</div>
+        <pre><span class="cmt"># Analyze a single file</span>
+ts-static-analyzer analyze src/utils.ts
+
+<span class="cmt"># Analyze an entire directory (recursive)</span>
+ts-static-analyzer analyze src/
+
+<span class="cmt"># Analyze multiple paths</span>
+ts-static-analyzer analyze src/ lib/ types/</pre>
+      </div>
+
+      <h3>Example output (table format)</h3>
+      <div class="output-block">Analyzed 3 file(s) — 12 function(s) — 340 LOC total
+
+╒══════════════════════╤═══════════════╤══════╤═════╤══════╤════════════╤═════════╤════════╕
+│ File                 │ Function      │ Line │ LOC │ SLOC │ Complexity │ Nesting │ Params │
+╞══════════════════════╪═══════════════╪══════╪═════╪══════╪════════════╪═════════╪════════╡
+│ src/utils.ts         │ parseConfig   │    5 │  18 │   14 │          3 │       2 │      1 │
+│ src/utils.ts         │ validateInput │   24 │  32 │   26 │         11 │       4 │      2 │
+│ src/processor.ts     │ processData   │    8 │  55 │   47 │          8 │       3 │      3 │
+╘══════════════════════╧═══════════════╧══════╧═════╧══════╧════════════╧═════════╧════════╛</div>
+
+      <h2>Understanding the output</h2>
+      <table class="threshold-table">
+        <thead><tr><th>Column</th><th>Description</th></tr></thead>
+        <tbody>
+          <tr><td><strong>File</strong></td><td>Path to the TypeScript source file</td></tr>
+          <tr><td><strong>Function</strong></td><td>Function or method name (<code>&lt;anonymous&gt;</code> for unnamed)</td></tr>
+          <tr><td><strong>Line</strong></td><td>1-based line number where the function is declared</td></tr>
+          <tr><td><strong>LOC</strong></td><td>Lines of Code (including blank and comment lines)</td></tr>
+          <tr><td><strong>SLOC</strong></td><td>Source Lines of Code (blank and comment lines excluded)</td></tr>
+          <tr><td><strong>Complexity</strong></td><td>Cyclomatic Complexity — color-coded green/yellow/red</td></tr>
+          <tr><td><strong>Nesting</strong></td><td>Maximum nesting depth</td></tr>
+          <tr><td><strong>Params</strong></td><td>Number of formal parameters</td></tr>
+        </tbody>
+      </table>
+
+      <h2>Filtering results</h2>
+      <div class="code-block">
+        <div class="code-block-header">bash</div>
+        <pre><span class="cmt"># Only show functions with CC ≥ 10</span>
+ts-static-analyzer analyze src/ --min-complexity 10
+
+<span class="cmt"># Only show functions with ≥ 50 LOC</span>
+ts-static-analyzer analyze src/ --min-loc 50
+
+<span class="cmt"># Show verbose output (skipped files reported to stderr)</span>
+ts-static-analyzer analyze src/ --verbose
+
+<span class="cmt"># Show timing information</span>
+ts-static-analyzer analyze src/ --timing</pre>
+      </div>
+
+      <h2>Next steps</h2>
+      <ul>
+        <li>Configure <a href="configuration.html">thresholds in tsm.yaml</a></li>
+        <li>Explore <a href="metrics/index.html">all available metrics</a></li>
+        <li>Learn about <a href="strategies/index.html">design smell detection</a></li>
+      </ul>
+
+      <div class="page-nav">
+        <a href="index.html" class="prev">
+          <span class="nav-dir">← Previous</span>
+          <span class="nav-title">Introduction</span>
+        </a>
+        <a href="configuration.html" class="next">
+          <span class="nav-dir">Next</span>
+          <span class="nav-title">Configuration →</span>
+        </a>
+      </div>
+      <a href="https://github.com/gabrielrf97/tsm/edit/main/docs/getting-started.html" class="edit-link">Edit on GitHub</a>
+
+    </main>
+  </div>
+</body>
+</html>

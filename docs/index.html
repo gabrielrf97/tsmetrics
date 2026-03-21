@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Introduction — TSM Docs</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div class="layout">
+    
+    <aside class="sidebar">
+      <div class="sidebar-header">
+        <a href="index.html" class="logo">TSM</a>
+        <p class="sidebar-subtitle">TypeScript Static Analyzer</p>
+      </div>
+      <nav class="sidebar-nav">
+        <div class="nav-section">
+          <div class="nav-section-title">Getting Started</div>
+          <a href="index.html" class="active">Introduction</a>
+          <a href="getting-started.html">Installation</a>
+          <a href="configuration.html">Configuration</a>
+          <a href="cli.html">CLI Reference</a>
+          <a href="output-formats.html">Output Formats</a>
+        </div>
+        <div class="nav-section">
+          <div class="nav-section-title">Metrics</div>
+          <a href="metrics/index.html">Overview</a>
+          <a href="metrics/cyclomatic.html">Cyclomatic Complexity</a>
+          <a href="metrics/halstead.html">Halstead Volume</a>
+          <a href="metrics/maintainability.html">Maintainability Index</a>
+          <a href="metrics/wmc.html">WMC</a>
+          <a href="metrics/dit.html">DIT</a>
+          <a href="metrics/nom.html">NOM / NOAM / NOOM</a>
+          <a href="metrics/woc.html">WOC</a>
+          <a href="metrics/tcc.html">TCC</a>
+          <a href="metrics/cbo.html">CBO</a>
+          <a href="metrics/rfc.html">RFC</a>
+          <a href="metrics/noi.html">NOI</a>
+          <a href="metrics/used-components.html">Used Components</a>
+          <a href="metrics/jsx-nesting.html">JSX Nesting</a>
+          <a href="metrics/technical-debt.html">Technical Debt</a>
+        </div>
+        <div class="nav-section">
+          <div class="nav-section-title">Strategies</div>
+          <a href="strategies/index.html">Overview</a>
+          <a href="strategies/god-class.html">God Class</a>
+          <a href="strategies/brain-method.html">Brain Method</a>
+          <a href="strategies/feature-envy.html">Feature Envy</a>
+          <a href="strategies/refused-bequest.html">Refused Bequest</a>
+        </div>
+      </nav>
+    </aside>
+    <main class="content">
+
+      <div class="hero">
+        <h1>TSM</h1>
+        <p class="tagline">A fast, tree-sitter-powered TypeScript static analyzer written in Rust. Compute 14+ metrics across functions, classes, files, and React components.</p>
+        <div class="hero-badges">
+          <span class="hero-badge">Rust</span>
+          <span class="hero-badge">TypeScript / TSX</span>
+          <span class="hero-badge">tree-sitter</span>
+          <span class="hero-badge">Parallel</span>
+          <span class="hero-badge">MIT</span>
+        </div>
+        <div class="hero-cta">
+          <a href="getting-started.html" class="btn btn-primary">Get Started</a>
+          <a href="https://github.com/gabrielrf97/tsm" class="btn btn-secondary">GitHub</a>
+        </div>
+      </div>
+
+      <h2>What is TSM?</h2>
+      <p>TSM (<em>TypeScript Static Analyzer</em>) is a command-line tool that parses TypeScript and TSX files using <strong>tree-sitter</strong> and computes a comprehensive set of software quality metrics. It is written in Rust and designed for speed, correctness, and scriptability.</p>
+      <p>TSM computes metrics at three levels:</p>
+      <ul>
+        <li><strong>Function-level</strong> — Cyclomatic Complexity, Halstead Volume, Maintainability Index, LOC, nesting depth, parameter count</li>
+        <li><strong>Class-level</strong> — WMC, DIT, NOM/NOAM/NOOM, WOC, TCC, CBO, RFC, NOI</li>
+        <li><strong>File-level</strong> — Technical Debt, SLOC</li>
+        <li><strong>React</strong> — JSX nesting depth, number of used components (NUC)</li>
+      </ul>
+      <p>It also detects four <strong>object-oriented design smells</strong> inspired by <em>Object-Oriented Metrics in Practice</em> (Lanza &amp; Marinescu): God Class, Brain Method, Feature Envy, and Refused Bequest.</p>
+
+      <h2>Features</h2>
+      <div class="feature-grid">
+        <div class="feature-card">
+          <div class="fc-icon">⚡</div>
+          <h3>Fast</h3>
+          <p>Files processed in parallel using Rayon. Handles large codebases without breaking a sweat.</p>
+        </div>
+        <div class="feature-card">
+          <div class="fc-icon">🎯</div>
+          <h3>Accurate</h3>
+          <p>Built on tree-sitter's full AST—no regex heuristics. Handles generics, decorators, and TSX.</p>
+        </div>
+        <div class="feature-card">
+          <div class="fc-icon">⚙️</div>
+          <h3>Configurable</h3>
+          <p>Override warning/error thresholds per metric in a <code>tsm.yaml</code> config file.</p>
+        </div>
+        <div class="feature-card">
+          <div class="fc-icon">📤</div>
+          <h3>Multiple Outputs</h3>
+          <p>Table, JSON, CSV, and self-contained HTML report formats.</p>
+        </div>
+      </div>
+
+      <h2>Quick Start</h2>
+      <div class="quick-install">
+        <span class="prompt"># Install from source</span><br>
+        cargo install --path .<br><br>
+        <span class="prompt"># Analyze a directory</span><br>
+        ts-static-analyzer analyze ./src<br><br>
+        <span class="prompt"># JSON output</span><br>
+        ts-static-analyzer analyze ./src --format json
+      </div>
+
+      <div class="page-nav">
+        <span></span>
+        <a href="getting-started.html" class="next">
+          <span class="nav-dir">Next</span>
+          <span class="nav-title">Installation &amp; Getting Started →</span>
+        </a>
+      </div>
+      <a href="https://github.com/gabrielrf97/tsm/edit/main/docs/index.html" class="edit-link">Edit on GitHub</a>
+
+    </main>
+  </div>
+</body>
+</html>

@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>JSX Nesting Depth — TSM Docs</title>
+<link rel="stylesheet" href="../style.css">
+</head>
+<body>
+<div class="layout">
+<aside class="sidebar">
+<div class="sidebar-header">
+<a href="../index.html" class="logo">TSM</a>
+<p class="sidebar-subtitle">TypeScript Static Analyzer</p>
+</div>
+<nav class="sidebar-nav">
+<div class="nav-section">
+<div class="nav-section-title">Getting Started</div>
+<a href="../index.html">Introduction</a>
+<a href="../getting-started.html">Installation</a>
+<a href="../configuration.html">Configuration</a>
+<a href="../cli.html">CLI Reference</a>
+<a href="../output-formats.html">Output Formats</a>
+</div>
+<div class="nav-section">
+<div class="nav-section-title">Metrics</div>
+<a href="../metrics/index.html">Overview</a>
+<a href="../metrics/cyclomatic.html">Cyclomatic Complexity</a>
+<a href="../metrics/halstead.html">Halstead Volume</a>
+<a href="../metrics/maintainability.html">Maintainability Index</a>
+<a href="../metrics/wmc.html">WMC</a>
+<a href="../metrics/dit.html">DIT</a>
+<a href="../metrics/nom.html">NOM / NOAM / NOOM</a>
+<a href="../metrics/woc.html">WOC</a>
+<a href="../metrics/tcc.html">TCC</a>
+<a href="../metrics/cbo.html">CBO</a>
+<a href="../metrics/rfc.html">RFC</a>
+<a href="../metrics/noi.html">NOI</a>
+<a href="../metrics/used-components.html">Used Components</a>
+<a href="../metrics/jsx-nesting.html" class="active">JSX Nesting</a>
+<a href="../metrics/technical-debt.html">Technical Debt</a>
+</div>
+<div class="nav-section">
+<div class="nav-section-title">Strategies</div>
+<a href="../strategies/index.html">Overview</a>
+<a href="../strategies/god-class.html">God Class</a>
+<a href="../strategies/brain-method.html">Brain Method</a>
+<a href="../strategies/feature-envy.html">Feature Envy</a>
+<a href="../strategies/refused-bequest.html">Refused Bequest</a>
+</div>
+</nav>
+</aside>
+<main class="content">
+<div class="breadcrumb"><a href="../index.html">Home</a> / <a href="index.html">Metrics</a> / JSX Nesting</div>
+<a href="https://github.com/gabrielrf97/tsm/edit/main/docs/metrics/jsx-nesting.html" class="edit-link" target="_blank">Edit on GitHub</a>
+
+<h1>JSX Nesting Depth</h1>
+<p class="badge">React Metric &nbsp;|&nbsp; AST-based</p>
+<p>Maximum nesting depth of JSX elements inside a component. Deep JSX trees are hard to read, maintain, and test.</p>
+
+<h2>Formula</h2>
+<div class="formula">jsx_nesting = max depth of nested jsx_element / jsx_fragment nodes</div>
+<p>Counting rules:</p>
+<ul>
+<li>Each <code>jsx_element</code> or <code>jsx_fragment</code> node increments the depth by 1.</li>
+<li><code>jsx_self_closing_element</code> is a leaf — depth 0 on its own, contributes to parent depth.</li>
+<li>Depth starts at 1 for the outermost JSX container.</li>
+</ul>
+
+<h2>TypeScript / TSX Example</h2>
+<pre><code><span class="kw">function</span> <span class="fn">Card</span>() {
+  <span class="kw">return</span> (              <span class="cmt">// depth 1</span>
+    &lt;div&gt;               <span class="cmt">// depth 1</span>
+      &lt;header&gt;          <span class="cmt">// depth 2</span>
+        &lt;h1&gt;            <span class="cmt">// depth 3</span>
+          &lt;span /&gt;      <span class="cmt">// self-closing leaf (depth 3 inherited)</span>
+        &lt;/h1&gt;
+      &lt;/header&gt;
+    &lt;/div&gt;
+  );
+}
+<span class="cmt">// jsx_nesting = 3</span>
+</code></pre>
+
+<h2>Thresholds</h2>
+<p>JSX nesting is informational — no configurable thresholds. Values above 5–6 are generally a sign that the component should be split.</p>
+
+<h2>Related metrics</h2>
+<p><a href="used-components.html">Used Components (NUC)</a> · <a href="cyclomatic.html">Cyclomatic Complexity</a> · <a href="../metrics/maintainability.html">Maintainability Index</a></p>
+
+<div class="page-nav"><a href="used-components.html" class="prev">← Used Components</a><a href="technical-debt.html" class="next">Technical Debt →</a></div>
+</main>
+</div>
+</body>
+</html>

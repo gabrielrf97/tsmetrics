@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CBO — Coupling Between Object Classes — TSM Docs</title>
+<link rel="stylesheet" href="../style.css">
+</head>
+<body>
+<div class="layout">
+<aside class="sidebar">
+<div class="sidebar-header">
+<a href="../index.html" class="logo">TSM</a>
+<p class="sidebar-subtitle">TypeScript Static Analyzer</p>
+</div>
+<nav class="sidebar-nav">
+<div class="nav-section">
+<div class="nav-section-title">Getting Started</div>
+<a href="../index.html">Introduction</a>
+<a href="../getting-started.html">Installation</a>
+<a href="../configuration.html">Configuration</a>
+<a href="../cli.html">CLI Reference</a>
+<a href="../output-formats.html">Output Formats</a>
+</div>
+<div class="nav-section">
+<div class="nav-section-title">Metrics</div>
+<a href="../metrics/index.html">Overview</a>
+<a href="../metrics/cyclomatic.html">Cyclomatic Complexity</a>
+<a href="../metrics/halstead.html">Halstead Volume</a>
+<a href="../metrics/maintainability.html">Maintainability Index</a>
+<a href="../metrics/wmc.html">WMC</a>
+<a href="../metrics/dit.html">DIT</a>
+<a href="../metrics/nom.html">NOM / NOAM / NOOM</a>
+<a href="../metrics/woc.html">WOC</a>
+<a href="../metrics/tcc.html">TCC</a>
+<a href="../metrics/cbo.html" class="active">CBO</a>
+<a href="../metrics/rfc.html">RFC</a>
+<a href="../metrics/noi.html">NOI</a>
+<a href="../metrics/used-components.html">Used Components</a>
+<a href="../metrics/jsx-nesting.html">JSX Nesting</a>
+<a href="../metrics/technical-debt.html">Technical Debt</a>
+</div>
+<div class="nav-section">
+<div class="nav-section-title">Strategies</div>
+<a href="../strategies/index.html">Overview</a>
+<a href="../strategies/god-class.html">God Class</a>
+<a href="../strategies/brain-method.html">Brain Method</a>
+<a href="../strategies/feature-envy.html">Feature Envy</a>
+<a href="../strategies/refused-bequest.html">Refused Bequest</a>
+</div>
+</nav>
+</aside>
+<main class="content">
+<div class="breadcrumb"><a href="../index.html">Home</a> / <a href="index.html">Metrics</a> / CBO</div>
+<a href="https://github.com/gabrielrf97/tsm/edit/main/docs/metrics/cbo.html" class="edit-link" target="_blank">Edit on GitHub</a>
+
+<h1>CBO — Coupling Between Object Classes</h1>
+<p class="badge">Class Metric &nbsp;|&nbsp; AST-based</p>
+<p>Count of distinct external types referenced in a class's <em>structural interface</em> — heritage clauses, property-type annotations, and method-signature parameter/return types. Body-level type usage (inside statement blocks) is intentionally excluded to measure <em>structural</em> coupling, not operational coupling.</p>
+
+<h2>Formula</h2>
+<div class="formula">CBO = |distinct external type references|</div>
+<p>The class's own name is removed from the set. Primitive types (<code>string</code>, <code>number</code>, <code>boolean</code>, etc.) are excluded naturally because they are represented as <code>predefined_type</code> nodes rather than <code>type_identifier</code> nodes.</p>
+
+<h2>What counts</h2>
+<table class="threshold-table">
+<thead><tr><th>Source</th><th>Included?</th><th>Example</th></tr></thead>
+<tbody>
+<tr><td>Heritage clause</td><td>✅</td><td><code>extends Base</code>, <code>implements IFoo</code></td></tr>
+<tr><td>Property type annotation</td><td>✅</td><td><code>name: UserDto</code></td></tr>
+<tr><td>Method parameter type</td><td>✅</td><td><code>fn(x: OrderService)</code></td></tr>
+<tr><td>Method return type</td><td>✅</td><td><code>(): Result&lt;T&gt;</code></td></tr>
+<tr><td>Body call expressions</td><td>❌</td><td><code>new HttpClient()</code> inside method body</td></tr>
+<tr><td>Primitives</td><td>❌</td><td><code>string</code>, <code>number</code></td></tr>
+</tbody>
+</table>
+
+<h2>TypeScript Example</h2>
+<pre><code><span class="kw">class</span> <span class="ty">OrderController</span> <span class="kw">extends</span> <span class="ty">BaseController</span>
+  <span class="kw">implements</span> <span class="ty">IController</span> {
+
+  <span class="kw">private</span> svc: <span class="ty">OrderService</span>;    <span class="cmt">// +1</span>
+  <span class="kw">private</span> log: <span class="ty">Logger</span>;           <span class="cmt">// +1</span>
+
+  <span class="fn">process</span>(dto: <span class="ty">OrderDto</span>): <span class="ty">Result</span>&lt;<span class="ty">Order</span>&gt; { ... }
+  <span class="cmt">// +3 from heritage, +2 from props, +3 from method sig</span>
+  <span class="cmt">// unique: BaseController, IController, OrderService, Logger, OrderDto, Result, Order</span>
+  <span class="cmt">// CBO = 7</span>
+}
+</code></pre>
+
+<h2>Thresholds</h2>
+<p>CBO is informational — there are no configurable thresholds for it. High values (&gt; 7–10) suggest the class is a coupling hub that will be brittle to change.</p>
+
+<h2>Related metrics</h2>
+<p><a href="rfc.html">RFC</a> · <a href="wmc.html">WMC</a> · <a href="dit.html">DIT</a></p>
+
+<div class="page-nav"><a href="tcc.html" class="prev">← TCC</a><a href="rfc.html" class="next">RFC →</a></div>
+</main>
+</div>
+</body>
+</html>

@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Metrics Overview — TSM Docs</title>
+  <link rel="stylesheet" href="../style.css">
+</head>
+<body>
+  <div class="layout">
+    
+    <aside class="sidebar">
+      <div class="sidebar-header">
+        <a href="../index.html" class="logo">TSM</a>
+        <p class="sidebar-subtitle">TypeScript Static Analyzer</p>
+      </div>
+      <nav class="sidebar-nav">
+        <div class="nav-section">
+          <div class="nav-section-title">Getting Started</div>
+          <a href="../index.html">Introduction</a>
+          <a href="../getting-started.html">Installation</a>
+          <a href="../configuration.html">Configuration</a>
+          <a href="../cli.html">CLI Reference</a>
+          <a href="../output-formats.html">Output Formats</a>
+        </div>
+        <div class="nav-section">
+          <div class="nav-section-title">Metrics</div>
+          <a href="../metrics/index.html" class="active">Overview</a>
+          <a href="../metrics/cyclomatic.html">Cyclomatic Complexity</a>
+          <a href="../metrics/halstead.html">Halstead Volume</a>
+          <a href="../metrics/maintainability.html">Maintainability Index</a>
+          <a href="../metrics/wmc.html">WMC</a>
+          <a href="../metrics/dit.html">DIT</a>
+          <a href="../metrics/nom.html">NOM / NOAM / NOOM</a>
+          <a href="../metrics/woc.html">WOC</a>
+          <a href="../metrics/tcc.html">TCC</a>
+          <a href="../metrics/cbo.html">CBO</a>
+          <a href="../metrics/rfc.html">RFC</a>
+          <a href="../metrics/noi.html">NOI</a>
+          <a href="../metrics/used-components.html">Used Components</a>
+          <a href="../metrics/jsx-nesting.html">JSX Nesting</a>
+          <a href="../metrics/technical-debt.html">Technical Debt</a>
+        </div>
+        <div class="nav-section">
+          <div class="nav-section-title">Strategies</div>
+          <a href="../strategies/index.html">Overview</a>
+          <a href="../strategies/god-class.html">God Class</a>
+          <a href="../strategies/brain-method.html">Brain Method</a>
+          <a href="../strategies/feature-envy.html">Feature Envy</a>
+          <a href="../strategies/refused-bequest.html">Refused Bequest</a>
+        </div>
+      </nav>
+    </aside>
+    <main class="content">
+
+      <div class="breadcrumb">
+        <a href="../index.html">Docs</a><span class="breadcrumb-sep">›</span>
+        <span>Metrics</span>
+      </div>
+      <div class="page-header">
+        <h1>Metrics Overview</h1>
+        <p class="tagline">TSM computes 14+ metrics across four categories.</p>
+      </div>
+
+      <h2>Function-level metrics</h2>
+      <table class="metrics-table">
+        <thead><tr><th>Metric</th><th>Key</th><th>Description</th><th>Default thresholds</th></tr></thead>
+        <tbody>
+          <tr><td><a href="cyclomatic.html">Cyclomatic Complexity</a></td><td><code>CC</code></td><td>Number of independent execution paths</td><td>warn: 10, err: 25</td></tr>
+          <tr><td><a href="halstead.html">Halstead Volume</a></td><td><code>V</code></td><td>Size of the implementation based on operator/operand counts</td><td>informational</td></tr>
+          <tr><td><a href="maintainability.html">Maintainability Index</a></td><td><code>MI</code></td><td>Composite score 0–100; higher = more maintainable</td><td>informational</td></tr>
+          <tr><td>LOC / SLOC</td><td>—</td><td>Total / source lines of code</td><td>warn: 50, err: 100</td></tr>
+          <tr><td>Max Nesting</td><td>—</td><td>Maximum block nesting depth</td><td>warn: 3, err: 5</td></tr>
+          <tr><td>Param Count</td><td>—</td><td>Number of formal parameters</td><td>warn: 4, err: 7</td></tr>
+        </tbody>
+      </table>
+
+      <h2>Class-level metrics</h2>
+      <table class="metrics-table">
+        <thead><tr><th>Metric</th><th>Key</th><th>Description</th><th>Default thresholds</th></tr></thead>
+        <tbody>
+          <tr><td><a href="wmc.html">Weighted Methods per Class</a></td><td><code>WMC</code></td><td>Sum of cyclomatic complexity across all methods</td><td>warn: 20, err: 50</td></tr>
+          <tr><td><a href="dit.html">Depth of Inheritance Tree</a></td><td><code>DIT</code></td><td>Edges from class to root of inheritance hierarchy</td><td>informational</td></tr>
+          <tr><td><a href="nom.html">Number of Methods</a></td><td><code>NOM/NOAM/NOOM</code></td><td>Total, added, and overriding methods</td><td>informational</td></tr>
+          <tr><td><a href="woc.html">Weight of Class</a></td><td><code>WOC</code></td><td>Ratio of public attributes to total public interface</td><td>informational</td></tr>
+          <tr><td><a href="tcc.html">Tight Class Cohesion</a></td><td><code>TCC</code></td><td>Fraction of method pairs sharing a field access</td><td>informational</td></tr>
+          <tr><td><a href="cbo.html">Coupling Between Objects</a></td><td><code>CBO</code></td><td>Count of distinct external types referenced structurally</td><td>informational</td></tr>
+          <tr><td><a href="rfc.html">Response For Class</a></td><td><code>RFC</code></td><td>NOM + number of unique callees in method bodies</td><td>informational</td></tr>
+          <tr><td><a href="noi.html">Number of Implemented Interfaces</a></td><td><code>NOI</code></td><td>Count of interfaces in the <code>implements</code> clause</td><td>warn: 3, err: 5</td></tr>
+        </tbody>
+      </table>
+
+      <h2>React metrics</h2>
+      <table class="metrics-table">
+        <thead><tr><th>Metric</th><th>Key</th><th>Description</th></tr></thead>
+        <tbody>
+          <tr><td><a href="used-components.html">Number of Used Components</a></td><td><code>NUC</code></td><td>Distinct PascalCase JSX component references in render output</td></tr>
+          <tr><td><a href="jsx-nesting.html">JSX Nesting Level</a></td><td>—</td><td>Maximum depth of nested JSX elements</td></tr>
+        </tbody>
+      </table>
+
+      <h2>File-level metrics</h2>
+      <table class="metrics-table">
+        <thead><tr><th>Metric</th><th>Key</th><th>Description</th></tr></thead>
+        <tbody>
+          <tr><td><a href="technical-debt.html">Technical Debt</a></td><td>—</td><td>Per-function debt aggregated to file level</td></tr>
+        </tbody>
+      </table>
+
+      <div class="page-nav">
+        <a href="../output-formats.html" class="prev">
+          <span class="nav-dir">← Previous</span><span class="nav-title">Output Formats</span>
+        </a>
+        <a href="cyclomatic.html" class="next">
+          <span class="nav-dir">Next</span><span class="nav-title">Cyclomatic Complexity →</span>
+        </a>
+      </div>
+      <a href="https://github.com/gabrielrf97/tsm/edit/main/docs/metrics/index.html" class="edit-link">Edit on GitHub</a>
+
+    </main>
+  </div>
+</body>
+</html>
