@@ -47,13 +47,15 @@ fn find_class_body(class_node: Node) -> Option<Node> {
     None
 }
 
-/// Iterate over immediate `method_definition` children of a `class_body` node.
+/// Iterate over immediate method children of a `class_body` node.
+/// Matches both `method_definition` (concrete methods) and
+/// `abstract_method_signature` (abstract methods in abstract classes).
 fn iter_methods(body: Node) -> impl Iterator<Item = Node> {
     let children: Vec<Node> = {
         let mut out = Vec::new();
         let mut cursor = body.walk();
         for child in body.children(&mut cursor) {
-            if child.kind() == "method_definition" {
+            if matches!(child.kind(), "method_definition" | "abstract_method_signature") {
                 out.push(child);
             }
         }
@@ -72,10 +74,14 @@ mod tests {
     }
 
     /// Walk the AST and return the first node matching one of the class kinds.
-    /// tree-sitter-typescript uses "class_declaration" for `class Foo {}` and
+    /// tree-sitter-typescript uses "class_declaration" for `class Foo {}`,
+    /// "abstract_class_declaration" for `abstract class Foo {}`, and
     /// "class" for class expressions like `const x = class {}`.
     fn find_first_class(node: Node) -> Option<Node> {
-        if matches!(node.kind(), "class_declaration" | "class") {
+        if matches!(
+            node.kind(),
+            "class_declaration" | "abstract_class_declaration" | "class"
+        ) {
             return Some(node);
         }
         let mut cursor = node.walk();
@@ -230,5 +236,41 @@ class WithNested {
         let tree = parse(src);
         let class = find_first_class(tree.root_node()).expect("no class found");
         assert_eq!(extract_class_name(class, src.as_bytes()), "<anonymous>");
+    }
+
+    // ── Abstract classes ───────────────────────────────────────────────────────
+
+    #[test]
+    fn test_abstract_class_with_abstract_methods() {
+        // Two abstract methods (no body, CC = 1 each) + one concrete method (CC = 1).
+        // method_count = 3, WMC = 3.
+        let src = r#"
+abstract class Shape {
+    abstract area(): number;
+    abstract perimeter(): number;
+    describe(): string { return "shape"; }
+}
+"#;
+        let tree = parse(src);
+        let class = find_first_class(tree.root_node()).expect("no class found");
+        assert_eq!(count_methods(class), 3);
+        assert_eq!(compute_wmc(class, src.as_bytes()), 3);
+    }
+
+    #[test]
+    fn test_abstract_class_only_abstract_methods() {
+        // Three abstract methods, no concrete methods.
+        // method_count = 3, WMC = 3.
+        let src = r#"
+abstract class Animal {
+    abstract speak(): void;
+    abstract move(): void;
+    abstract eat(): void;
+}
+"#;
+        let tree = parse(src);
+        let class = find_first_class(tree.root_node()).expect("no class found");
+        assert_eq!(count_methods(class), 3);
+        assert_eq!(compute_wmc(class, src.as_bytes()), 3);
     }
 }
