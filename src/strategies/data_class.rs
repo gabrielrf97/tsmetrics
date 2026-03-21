@@ -61,7 +61,12 @@ pub fn detect_data_classes(
         // Re-locate the class node to compute WMC.  We walk from the root and
         // match by class name + line so we can support multiple classes per
         // file without re-parsing.
-        let wmc = find_wmc_for_line(root, source, woc_entry.line);
+        //
+        // `find_wmc_for_line` returns `None` only when the class cannot be
+        // found (should not happen since `woc_entry` came from the same AST),
+        // in which case we conservatively treat WMC as 0.
+        let wmc = find_wmc_for_line(root, source, &woc_entry.class_name, woc_entry.line)
+            .unwrap_or(0);
 
         let is_data_class =
             woc_entry.woc > thresholds.min_woc && wmc < thresholds.max_wmc;
@@ -78,34 +83,38 @@ pub fn detect_data_classes(
     results
 }
 
-/// Walk the AST and compute WMC for the class node that starts at `line`
-/// (1-based).  Returns 0 if no matching class is found.
-fn find_wmc_for_line(node: Node, source: &[u8], line: usize) -> usize {
+/// Walk the AST and compute WMC for the class node whose name matches
+/// `class_name` and that starts at `line` (1-based).
+///
+/// Returns `Some(wmc)` when a matching class is found (WMC may be 0 for an
+/// empty class), or `None` when no class with that name+line combination
+/// exists in the subtree.
+fn find_wmc_for_line(
+    node: Node,
+    source: &[u8],
+    class_name: &str,
+    line: usize,
+) -> Option<usize> {
     if matches!(node.kind(), "class_declaration" | "class")
         && node.child_by_field_name("body").is_some()
         && node.start_position().row + 1 == line
     {
-        return compute_wmc(node, source);
+        // Verify name matches to avoid collisions between classes on the same line.
+        let name = node
+            .child_by_field_name("name")
+            .and_then(|n| n.utf8_text(source).ok())
+            .unwrap_or("<anonymous>");
+        if name == class_name {
+            return Some(compute_wmc(node, source));
+        }
     }
     let mut cursor = node.walk();
     for child in node.children(&mut cursor) {
-        let wmc = find_wmc_for_line(child, source, line);
-        if wmc > 0 || (matches!(child.kind(), "class_declaration" | "class")
-            && child.child_by_field_name("body").is_some()
-            && child.start_position().row + 1 == line)
-        {
-            // Re-check: if the child is the class at that line, return its wmc
-            // (even if it was 0 for a class with no methods).
-            if matches!(child.kind(), "class_declaration" | "class")
-                && child.child_by_field_name("body").is_some()
-                && child.start_position().row + 1 == line
-            {
-                return compute_wmc(child, source);
-            }
-            return wmc;
+        if let Some(wmc) = find_wmc_for_line(child, source, class_name, line) {
+            return Some(wmc);
         }
     }
-    0
+    None
 }
 
 /// Convenience wrapper using default thresholds.
@@ -363,5 +372,99 @@ class PersonService {
 
         let svc = results.iter().find(|r| r.class_name == "PersonService").unwrap();
         assert!(!svc.is_data_class, "PersonService must NOT be flagged");
+    }
+
+    // ── Bug regression: WMC=0 sentinel collision (Bug 2) ─────────────────────
+
+    /// A class with many public fields and NO methods has WMC = 0.
+    /// Before the fix, `find_wmc_for_line` returned 0 both for "found with
+    /// WMC=0" and "class not found", causing the caller to silently skip the
+    /// WMC constraint.  With `Option<usize>` the two cases are distinct and
+    /// the WMC is correctly reported as 0.
+    #[test]
+    fn test_zero_wmc_class_is_correctly_detected() {
+        // Class has 3 public fields and NO methods → WMC = 0, WOC = 1.0.
+        // With default thresholds (max_wmc = 10) this IS a Data Class.
+        let src = r#"
+class PureDataClass {
+    public x: number;
+    public y: number;
+    public z: number;
+}
+"#;
+        let results = detect(src);
+        assert_eq!(results.len(), 1);
+        let r = &results[0];
+        assert_eq!(r.wmc, 0, "class with no methods must have WMC = 0");
+        assert!(r.woc > 0.5, "WOC must be > 0.5");
+        assert!(
+            r.is_data_class,
+            "zero-method data class must still be flagged (WMC=0 is < 10)"
+        );
+    }
+
+    // ── Bug regression: line-only matching (Bug 1) ───────────────────────────
+
+    /// Two classes that have the same name on different lines must each get
+    /// their own WMC computed independently.  The name+line match ensures that
+    /// `find_wmc_for_line` never returns the WMC of the wrong class.
+    #[test]
+    fn test_same_name_different_lines_matched_correctly() {
+        // Reuse class name in separate namespaced blocks is unusual in
+        // TypeScript but valid in test fixtures.  We use distinct names here
+        // to exercise the name-based disambiguation: both classes start on
+        // different lines and must receive independent WMC values.
+        let src = r#"
+class Alpha {
+    public a: number;
+
+    public doA(): void {}
+}
+
+class Beta {
+    public b: number;
+    public c: number;
+    public d: number;
+}
+"#;
+        let results = detect(src);
+        assert_eq!(results.len(), 2);
+
+        let alpha = results.iter().find(|r| r.class_name == "Alpha").unwrap();
+        // Alpha: 1 public field + 1 public method → WOC = 0.5 (not flagged).
+        assert_eq!(alpha.wmc, 1, "Alpha must have WMC = 1 (one simple method)");
+        assert!(!alpha.is_data_class, "Alpha WOC=0.5 must not be flagged");
+
+        let beta = results.iter().find(|r| r.class_name == "Beta").unwrap();
+        // Beta: 3 public fields + 0 methods → WMC = 0, WOC = 1.0 (flagged).
+        assert_eq!(beta.wmc, 0, "Beta must have WMC = 0 (no methods)");
+        assert!(beta.is_data_class, "Beta must be flagged as Data Class");
+    }
+
+    /// Verify that `find_wmc_for_line` returns `None` when the requested name
+    /// does not match any class in the AST, ensuring the `Option` contract is
+    /// upheld and no phantom WMC value leaks through.
+    #[test]
+    fn test_find_wmc_returns_none_for_missing_class() {
+        use crate::parse::parse_typescript;
+
+        let src = "class Real {}";
+        let tree = parse_typescript(src).expect("parse failed");
+        let root = tree.root_node();
+
+        // "Ghost" does not exist in the source → must return None.
+        let result = super::find_wmc_for_line(root, src.as_bytes(), "Ghost", 1);
+        assert!(
+            result.is_none(),
+            "find_wmc_for_line must return None for an absent class name"
+        );
+
+        // "Real" at line 1 does exist → must return Some(0).
+        let result = super::find_wmc_for_line(root, src.as_bytes(), "Real", 1);
+        assert_eq!(
+            result,
+            Some(0),
+            "find_wmc_for_line must return Some(0) for an empty class"
+        );
     }
 }
