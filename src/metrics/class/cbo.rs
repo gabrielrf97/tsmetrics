@@ -459,4 +459,198 @@ class Coupled extends Isolated implements IFoo {}
         assert_eq!(isolated.cbo, 0);
         assert_eq!(coupled.cbo, 2);
     }
+
+    // --- edge case: self-reference in generic type argument ---
+
+    #[test]
+    fn test_self_reference_in_generic_not_counted() {
+        // `Array<Node>` where the class itself is named `Node` — self must be excluded.
+        let src = r#"
+class Node {
+    children: Array<Node>;
+    parent: Node;
+    clone(): Node {}
+}
+"#;
+        let c = first(src);
+        // Node references itself in Array<Node>, as a property, and as return type.
+        // Self-reference must be stripped; Array is the only remaining coupled type.
+        assert!(
+            !c.coupled_types.contains(&"Node".to_string()),
+            "self-reference must not appear in coupled_types, got {:?}",
+            c.coupled_types
+        );
+        assert!(
+            c.coupled_types.contains(&"Array".to_string()),
+            "Array should be counted as a coupled type, got {:?}",
+            c.coupled_types
+        );
+    }
+
+    // --- edge case: generic with mixed primitive and user-defined type args ---
+
+    #[test]
+    fn test_generic_map_with_primitive_key_counts_only_value_type() {
+        // Map<string, MyType>: `string` is a predefined_type — not a type_identifier —
+        // so it must not be counted.  `Map` and `MyType` are type_identifiers and must be.
+        let src = r#"
+class Store {
+    data: Map<string, MyType>;
+}
+"#;
+        let c = first(src);
+        assert!(
+            !c.coupled_types.contains(&"string".to_string()),
+            "string is a primitive and must not appear in coupled_types, got {:?}",
+            c.coupled_types
+        );
+        assert!(
+            c.coupled_types.contains(&"Map".to_string()),
+            "Map should be counted, got {:?}",
+            c.coupled_types
+        );
+        assert!(
+            c.coupled_types.contains(&"MyType".to_string()),
+            "MyType should be counted, got {:?}",
+            c.coupled_types
+        );
+        assert_eq!(c.cbo, 2, "only Map + MyType should be counted, got {:?}", c.coupled_types);
+    }
+
+    // --- edge case: deeply nested generic type arguments in method signatures ---
+
+    #[test]
+    fn test_deeply_nested_generic_in_method_signature_counts_all_types() {
+        // Promise<Array<Observable<Event>>> — all four type_identifiers must be collected.
+        let src = r#"
+class Processor {
+    fetch(): Promise<Array<Observable<Event>>> {}
+}
+"#;
+        let c = first(src);
+        for expected in &["Promise", "Array", "Observable", "Event"] {
+            assert!(
+                c.coupled_types.contains(&expected.to_string()),
+                "expected {} in coupled_types, got {:?}",
+                expected,
+                c.coupled_types
+            );
+        }
+    }
+
+    // --- edge case: union type in property annotation ---
+
+    #[test]
+    fn test_union_type_in_property_counts_all_branches() {
+        // `TypeA | TypeB` — both branches must be counted.
+        let src = r#"
+class Handler {
+    result: TypeA | TypeB;
+}
+"#;
+        let c = first(src);
+        assert!(
+            c.coupled_types.contains(&"TypeA".to_string()),
+            "expected TypeA, got {:?}",
+            c.coupled_types
+        );
+        assert!(
+            c.coupled_types.contains(&"TypeB".to_string()),
+            "expected TypeB, got {:?}",
+            c.coupled_types
+        );
+        assert_eq!(c.cbo, 2);
+    }
+
+    // --- edge case: intersection type in property annotation ---
+
+    #[test]
+    fn test_intersection_type_in_property_counts_all_parts() {
+        // `Serializable & Loggable` — both must be counted.
+        let src = r#"
+class Entity {
+    meta: Serializable & Loggable;
+}
+"#;
+        let c = first(src);
+        assert!(
+            c.coupled_types.contains(&"Serializable".to_string()),
+            "expected Serializable, got {:?}",
+            c.coupled_types
+        );
+        assert!(
+            c.coupled_types.contains(&"Loggable".to_string()),
+            "expected Loggable, got {:?}",
+            c.coupled_types
+        );
+        assert_eq!(c.cbo, 2);
+    }
+
+    // --- edge case: type alias used as property type ---
+
+    #[test]
+    fn test_type_alias_used_as_property_type_counts_the_alias() {
+        // The class is coupled to the alias name (structural boundary), not the
+        // underlying type.  The alias itself appears as a `type_identifier`.
+        let src = r#"
+type UserId = string;
+
+class UserService {
+    id: UserId;
+}
+"#;
+        let c = first(src);
+        assert!(
+            c.coupled_types.contains(&"UserId".to_string()),
+            "expected UserId in coupled_types, got {:?}",
+            c.coupled_types
+        );
+        assert_eq!(c.cbo, 1);
+    }
+
+    // --- edge case: optional parameter with user-defined type ---
+
+    #[test]
+    fn test_optional_parameter_type_is_counted() {
+        // `method(x?: MyType)` — the `?` is just a modifier; MyType must still count.
+        let src = r#"
+class Builder {
+    build(config?: BuildConfig): Widget {}
+}
+"#;
+        let c = first(src);
+        assert!(
+            c.coupled_types.contains(&"BuildConfig".to_string()),
+            "expected BuildConfig, got {:?}",
+            c.coupled_types
+        );
+        assert!(
+            c.coupled_types.contains(&"Widget".to_string()),
+            "expected Widget, got {:?}",
+            c.coupled_types
+        );
+        assert_eq!(c.cbo, 2);
+    }
+
+    // --- edge case: class that extends a generic base ---
+
+    #[test]
+    fn test_extending_generic_base_counts_base_and_type_arg() {
+        // `extends Repository<Order>` — both Repository and Order must be counted.
+        let src = r#"
+class OrderRepository extends Repository<Order> {}
+"#;
+        let c = first(src);
+        assert!(
+            c.coupled_types.contains(&"Repository".to_string()),
+            "expected Repository, got {:?}",
+            c.coupled_types
+        );
+        assert!(
+            c.coupled_types.contains(&"Order".to_string()),
+            "expected Order, got {:?}",
+            c.coupled_types
+        );
+        assert_eq!(c.cbo, 2);
+    }
 }
