@@ -86,11 +86,13 @@ fn measure_class(class_node: Node, source: &[u8]) -> ClassRfc {
     }
 }
 
-/// Count `method_definition` children of a `class_body`.
+/// Count `method_definition` and `abstract_method_signature` children of a `class_body`.
 fn count_methods(body: Node) -> usize {
     let mut cursor = body.walk();
     body.children(&mut cursor)
-        .filter(|n| n.kind() == "method_definition")
+        .filter(|n| {
+            matches!(n.kind(), "method_definition" | "abstract_method_signature")
+        })
         .count()
 }
 
@@ -103,7 +105,7 @@ fn collect_callees(body: Node, source: &[u8]) -> HashSet<String> {
     let mut callees = HashSet::new();
     let mut cursor = body.walk();
     for member in body.children(&mut cursor) {
-        if member.kind() == "method_definition" {
+        if matches!(member.kind(), "method_definition" | "abstract_method_signature") {
             if let Some(method_body) = member.child_by_field_name("body") {
                 walk_for_calls(method_body, source, &mut callees);
             }
@@ -112,13 +114,41 @@ fn collect_callees(body: Node, source: &[u8]) -> HashSet<String> {
     callees
 }
 
+/// Extract the callee name from the `function` field of a `call_expression`.
+///
+/// For simple cases (`foo`, `this.foo`, `console.log`) the full text is used.
+/// For chained/fluent calls (`arr.filter(pred).map(fn)`), the `function` field
+/// is a `member_expression` whose *object* is itself a `call_expression`.  In
+/// that case we capture only the property name (`map`) to avoid embedding the
+/// intermediate call text in the callee string.
+fn callee_text<'a>(func: Node<'a>, source: &'a [u8]) -> Option<String> {
+    if func.kind() == "member_expression" {
+        if let Some(obj) = func.child_by_field_name("object") {
+            if obj.kind() == "call_expression" {
+                // Chained call — take only the final property name.
+                return func
+                    .child_by_field_name("property")
+                    .and_then(|p| p.utf8_text(source).ok())
+                    .map(|s| s.to_string());
+            }
+        }
+    }
+    func.utf8_text(source).ok().map(|s| s.to_string())
+}
+
 /// Recursively walk `node`, inserting callee texts into `callees`.
+///
+/// Recursion stops at class boundaries (`class_declaration`, `class`,
+/// `abstract_class_declaration`) so that calls inside nested class expressions
+/// are not attributed to the enclosing class.
 fn walk_for_calls(node: Node, source: &[u8], callees: &mut HashSet<String>) {
     match node.kind() {
+        // Stop at nested class boundaries — their methods belong to a different class.
+        "class_declaration" | "abstract_class_declaration" | "class" => {}
         "call_expression" => {
             if let Some(func) = node.child_by_field_name("function") {
-                if let Ok(text) = func.utf8_text(source) {
-                    callees.insert(text.to_string());
+                if let Some(text) = callee_text(func, source) {
+                    callees.insert(text);
                 }
             }
             // Also recurse into argument list to catch nested calls.
@@ -334,5 +364,68 @@ class B {
         let c = first(src);
         assert_eq!(c.class_name, "MyClass");
         assert_eq!(c.line, 1);
+    }
+
+    // ── Bug 1: abstract_method_signature counted in NOM ───────────────────────
+
+    #[test]
+    fn test_abstract_methods_counted_in_nom() {
+        let src = r#"
+abstract class Shape {
+    abstract area(): number;
+    abstract perimeter(): number;
+    describe(): string { return "shape"; }
+}
+"#;
+        let c = first(src);
+        // 2 abstract_method_signature + 1 method_definition = 3
+        assert_eq!(c.nom, 3, "abstract methods must be counted in NOM");
+        assert_eq!(c.rfc, 3, "RFC = NOM + 0 callees for this class");
+    }
+
+    // ── Bug 2: chained/fluent call yields only the final method name ──────────
+
+    #[test]
+    fn test_chained_calls_callee_text() {
+        let src = r#"
+class Processor {
+    run(items: number[]): number[] {
+        return items.filter(x => x > 0).map(x => x * 2);
+    }
+}
+"#;
+        let c = first(src);
+        assert_eq!(c.nom, 1);
+        // Callees: `items.filter` (from inner call) + `map` (final property of chain).
+        // Before the fix the outer callee would have been `items.filter(x => x > 0).map`,
+        // which embeds intermediate call text. After the fix it is just `map`.
+        assert_eq!(
+            c.unique_callees, 2,
+            "chained call should yield two distinct callees: `items.filter` and `map`"
+        );
+        assert_eq!(c.rfc, 3);
+    }
+
+    // ── Bug 3: nested class expression calls not leaked into outer class ───────
+
+    #[test]
+    fn test_nested_class_calls_not_attributed_to_outer() {
+        let src = r#"
+class Outer {
+    method(): void {
+        const inner = class {
+            helper(): void { externalCall(); }
+        };
+    }
+}
+"#;
+        let c = first(src);
+        assert_eq!(c.nom, 1);
+        // `externalCall` is inside the nested class — must NOT be attributed to Outer.
+        assert_eq!(
+            c.unique_callees, 0,
+            "calls inside a nested class expression must not leak into the outer class"
+        );
+        assert_eq!(c.rfc, 1);
     }
 }
