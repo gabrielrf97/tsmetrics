@@ -4,13 +4,15 @@
 //! return statement (or any JSX expression at module scope).
 //!
 //! Depth counting rules:
-//! - Each `jsx_element` or `jsx_fragment` that **contains** children increments
-//!   the depth by 1 as we descend into it.
+//! - Every `jsx_element` or `jsx_fragment` increments the depth by 1 as we
+//!   descend into it, regardless of whether it contains children.
 //! - `jsx_self_closing_element` nodes are leaves — they do not open a new level.
 //! - Depth starts at 1 for the outermost JSX element found.
 //! - JSX inside `{expression}` children is counted normally.
 //!
-//! A result of 0 means no JSX was found in the source.
+//! A result of 0 means no nested JSX was found (no element contains another);
+//! this includes the case where no JSX is present at all, as well as source
+//! that contains only self-closing elements.
 //!
 //! High nesting (typically > 4–5) signals a component that should be
 //! decomposed into smaller sub-components.
@@ -22,7 +24,8 @@ use tree_sitter::{Node, Parser};
 /// Parse TSX `source` and return the maximum JSX nesting depth found anywhere
 /// in the file.
 ///
-/// Returns `0` when no JSX elements are present.
+/// Returns `0` when no nested JSX is present (no element contains another,
+/// or no JSX is present at all).
 pub fn max_jsx_nesting(source: &str) -> usize {
     let mut parser = Parser::new();
     parser
@@ -148,7 +151,7 @@ mod tests {
 
     #[test]
     fn max_is_taken_across_branches() {
-        // left branch: 2 levels; right branch: 3 levels — max = 3
+        // left branch: 2 levels; right branch: 3 levels — max = 4
         let src = r#"
             const el = (
                 <div>
