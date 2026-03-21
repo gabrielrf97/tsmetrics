@@ -7,6 +7,8 @@ pub struct Config {
     pub verbose: bool,
     pub min_complexity: Option<usize>,
     pub min_loc: Option<usize>,
+    /// When true, record and display wall-clock time and thread count after analysis.
+    pub timing: bool,
 }
 
 #[derive(Debug, Clone, PartialEq)]
@@ -24,6 +26,7 @@ impl Config {
             verbose: false,
             min_complexity: None,
             min_loc: None,
+            timing: false,
         }
     }
 }
