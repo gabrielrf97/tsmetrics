@@ -13,11 +13,12 @@
 //! Counting rules:
 //!   - Each unique PascalCase tag name counts once regardless of how many
 //!     times it appears.
-//!   - Traversal stops at nested `function_declaration` / `function_expression`
-//!     nodes so that component definitions inside a component do not contribute
-//!     their JSX to the outer component's NUC.
+//!   - Traversal stops at nested `function_declaration`, `function_expression`,
+//!     and PascalCase-assigned `arrow_function` nodes so that inner component
+//!     definitions do not contribute their JSX to the outer component's NUC.
 //!   - Inline `arrow_function` callbacks (e.g. inside `.map(…)`) are traversed
-//!     because they are part of the render scope.
+//!     because they are part of the render scope and are not assigned to a
+//!     PascalCase variable.
 
 use std::collections::HashSet;
 
@@ -119,10 +120,13 @@ fn collect_components(node: Node, source: &[u8], out: &mut Vec<ComponentNuc>) {
 
 /// Count distinct PascalCase JSX tag references under `root`.
 ///
-/// Descends into the full subtree but **skips** nested `function_declaration`
-/// and `function_expression` nodes to avoid attributing a nested component's
-/// JSX to the outer component.  Inline `arrow_function` nodes (render
-/// callbacks) are traversed normally.
+/// Descends into the full subtree but **skips** nested `function_declaration`,
+/// `function_expression`, and `arrow_function` nodes that are assigned to a
+/// PascalCase variable (i.e. inner arrow-function components like
+/// `const Inner = () => …`) to avoid attributing a nested component's JSX to
+/// the outer component.  Inline `arrow_function` callbacks (render callbacks
+/// such as `.map(item => <ListItem />)`) are traversed normally because they
+/// are not assigned to a PascalCase variable.
 fn count_jsx_component_refs(root: Node, source: &[u8]) -> usize {
     let mut seen: HashSet<String> = HashSet::new();
     // is_root=true so the root node itself is never skipped.
@@ -135,6 +139,23 @@ fn collect_jsx_refs(node: Node, source: &[u8], seen: &mut HashSet<String>, is_ro
     // component node itself, which may be a function_declaration).
     if !is_root && matches!(node.kind(), "function_declaration" | "function_expression") {
         return;
+    }
+
+    // Stop at arrow functions that are assigned to a PascalCase variable
+    // (i.e. inner arrow-function components like `const Inner = () => …`).
+    // Inline arrow callbacks (e.g. inside `.map(…)`) are NOT assigned to a
+    // PascalCase variable_declarator and continue to be traversed normally.
+    if !is_root && node.kind() == "arrow_function" {
+        if let Some(parent) = node.parent() {
+            if parent.kind() == "variable_declarator" {
+                if let Some(name_node) = parent.child_by_field_name("name") {
+                    let name = name_node.utf8_text(source).unwrap_or("");
+                    if is_pascal_case(name) {
+                        return;
+                    }
+                }
+            }
+        }
     }
 
     match node.kind() {
@@ -416,6 +437,25 @@ function ItemList() {
         let c = first(src);
         assert_eq!(c.component_name, "ItemList");
         assert_eq!(c.nuc, 1, "ListItem inside arrow callback counts");
+    }
+
+    // ── Nested arrow-function component JSX excluded ──────────────────────────
+
+    #[test]
+    fn test_nested_arrow_function_component_excluded() {
+        let src = r#"
+function Outer() {
+  const Inner = () => <Button />;
+  return <Inner />;
+}
+"#;
+        let results = nuc_for(src);
+        let outer = find_component(&results, "Outer");
+        // Only <Inner /> counts for Outer; <Button /> is inside Inner's body.
+        assert_eq!(outer.nuc, 1, "Inner is used by Outer; Button is not");
+
+        let inner = find_component(&results, "Inner");
+        assert_eq!(inner.nuc, 1, "Inner uses Button");
     }
 
     // ── Nested function declaration JSX excluded ──────────────────────────────
