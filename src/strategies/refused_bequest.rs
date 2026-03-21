@@ -3,8 +3,8 @@ use std::collections::HashMap;
 use serde::Serialize;
 use tree_sitter::Node;
 
-use crate::metrics::class::dit::compute_dit;
-use crate::metrics::class::nom::compute_class_nom;
+use crate::metrics::class::dit::{collect_parent_map, compute_dit};
+use crate::metrics::class::nom::{collect_class_method_info, compute_class_nom};
 
 /// Override-ratio threshold below which a subclass is considered a Refused Bequest.
 ///
@@ -43,8 +43,13 @@ pub struct RefusedBequest {
 /// - `noom / nom < OVERRIDE_RATIO_THRESHOLD` (override ratio is very low).
 ///
 /// Classes that do not appear in the DIT results (e.g. anonymous class
-/// expressions) are skipped because their inheritance depth cannot be
-/// determined.
+/// expressions without a name) are skipped because their inheritance depth
+/// cannot be determined.
+///
+/// NOOM is computed as the count of methods carrying the `override` keyword
+/// **plus** the count of concrete methods whose names match abstract methods
+/// declared in the direct parent class.  This prevents false positives when a
+/// concrete class implements abstract methods without writing `override`.
 pub fn detect_refused_bequest(root: Node, source: &[u8]) -> Vec<RefusedBequest> {
     let dit_results = compute_dit(root, source);
     let nom_results = compute_class_nom(root, source);
@@ -57,6 +62,21 @@ pub fn detect_refused_bequest(root: Node, source: &[u8]) -> Vec<RefusedBequest> 
         .map(|d| (d.name.as_str(), d.dit))
         .collect();
 
+    // Build class_name → direct parent name for all named classes in the file.
+    let parent_map: HashMap<String, Option<String>> = collect_parent_map(root, source);
+
+    // Build class_name → {abstract method names} for every class that has them.
+    let method_info = collect_class_method_info(root, source);
+    let abstract_methods_by_class: HashMap<&str, _> = method_info
+        .iter()
+        .map(|info| (info.class_name.as_str(), &info.abstract_method_names))
+        .collect();
+    // Also index non-override concrete method names so we can intersect below.
+    let non_override_by_class: HashMap<&str, _> = method_info
+        .iter()
+        .map(|info| (info.class_name.as_str(), &info.concrete_non_override_names))
+        .collect();
+
     nom_results
         .iter()
         .filter_map(|n| {
@@ -67,10 +87,25 @@ pub fn detect_refused_bequest(root: Node, source: &[u8]) -> Vec<RefusedBequest> 
                 return None;
             }
 
+            // Compute implicit overrides: concrete methods in this class that
+            // implement abstract methods from the *direct* parent without using
+            // the `override` keyword.
+            let implicit = parent_map
+                .get(n.class_name.as_str())
+                .and_then(|opt_parent| opt_parent.as_deref())
+                .and_then(|parent_name| {
+                    let abs = abstract_methods_by_class.get(parent_name)?;
+                    let non_ov = non_override_by_class.get(n.class_name.as_str())?;
+                    Some(non_ov.intersection(abs).count())
+                })
+                .unwrap_or(0);
+
+            let noom = n.noom + implicit;
+
             let override_ratio = if n.nom == 0 {
                 0.0
             } else {
-                n.noom as f64 / n.nom as f64
+                noom as f64 / n.nom as f64
             };
 
             if override_ratio < OVERRIDE_RATIO_THRESHOLD {
@@ -79,7 +114,7 @@ pub fn detect_refused_bequest(root: Node, source: &[u8]) -> Vec<RefusedBequest> 
                     line: n.line,
                     dit,
                     nom: n.nom,
-                    noom: n.noom,
+                    noom,
                     override_ratio,
                 })
             } else {
@@ -347,5 +382,95 @@ class Child extends Base {
         assert_eq!(s.noom, 1);
         assert_relative_eq!(s.override_ratio, 0.2, epsilon = 1e-9);
         assert_eq!(s.line, 3); // "class Child" is on line 3
+    }
+
+    // ── Bug fix: abstract method implementations without `override` ────────────
+    // Regression: a concrete child that implements ALL abstract parent methods
+    // without writing `override` was previously flagged as Refused Bequest
+    // because the old code counted NOOM=0.
+
+    #[test]
+    fn abstract_impl_without_override_not_flagged() {
+        // Circle implements Shape's abstract `area()` without `override`.
+        // NOOM should be counted as 1 (implicit override), ratio = 1/1 = 1.0 → not flagged.
+        let src = r#"
+abstract class Shape { abstract area(): number; }
+class Circle extends Shape {
+    area(): number { return 3.14; }
+}
+"#;
+        let smells = detect(src);
+        assert!(
+            smells.is_empty(),
+            "implementing all abstract methods without `override` must not be flagged; got {:?}",
+            smells
+        );
+    }
+
+    #[test]
+    fn abstract_impl_partial_without_override_uses_correct_ratio() {
+        // Child implements 1 of 3 abstract methods (without `override`) and adds 2 new ones.
+        // NOOM = 1 (implicit), NOM = 3, ratio = 1/3 ≈ 0.333 ≥ 0.33 → not flagged.
+        let src = r#"
+abstract class Base {
+    abstract x(): void;
+    abstract y(): void;
+    abstract z(): void;
+}
+class Child extends Base {
+    x(): void {}
+    extra1(): void {}
+    extra2(): void {}
+}
+"#;
+        let smells = detect(src);
+        // Child: noom=1 (x implements abstract x), nom=3, ratio=0.333 → not flagged
+        assert!(
+            smells.is_empty(),
+            "ratio at threshold after counting implicit abstract implementations must not be flagged; got {:?}",
+            smells
+        );
+    }
+
+    // ── Bug fix: named class expressions with `extends` ───────────────────────
+    // Regression: `const Foo = class FooClass extends Base {}` was silently
+    // dropped because `compute_dit` only walked `class_declaration` nodes.
+
+    #[test]
+    fn named_class_expression_with_extends_flagged() {
+        // FooClass is a named class expression extending Base with no overrides.
+        // It should appear in DIT with dit=1 and be flagged.
+        let src = r#"
+class Base { method(): void {} }
+const Foo = class FooClass extends Base {}
+"#;
+        let smells = detect(src);
+        assert!(
+            smells.iter().any(|s| s.class_name == "FooClass"),
+            "named class expression with extends must be detected; got {:?}",
+            smells
+        );
+        let s = smells.iter().find(|s| s.class_name == "FooClass").unwrap();
+        assert_eq!(s.dit, 1);
+        assert_eq!(s.nom, 0);
+        assert_eq!(s.noom, 0);
+        assert_relative_eq!(s.override_ratio, 0.0);
+    }
+
+    #[test]
+    fn named_class_expression_with_overrides_not_flagged() {
+        // FooClass overrides the parent method — ratio = 1/1 = 1.0 → not flagged.
+        let src = r#"
+class Base { method(): void {} }
+const Foo = class FooClass extends Base {
+    override method(): void {}
+}
+"#;
+        let smells = detect(src);
+        assert!(
+            !smells.iter().any(|s| s.class_name == "FooClass"),
+            "named class expression with full override ratio must not be flagged; got {:?}",
+            smells
+        );
     }
 }
