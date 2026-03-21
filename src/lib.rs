@@ -8,7 +8,10 @@ pub mod utils;
 
 use anyhow::Result;
 use rayon::prelude::*;
+use std::collections::HashSet;
 use std::fs;
+use std::sync::{Arc, Mutex};
+use std::thread;
 use std::time::Instant;
 
 use config::Config;
@@ -21,9 +24,17 @@ pub fn analyze(config: &Config) -> Result<AnalysisResult> {
 
     let start = Instant::now();
 
+    // Track unique OS thread IDs that actually execute work in this parallel job.
+    // Using ThreadId (instead of rayon::current_thread_index) ensures we capture
+    // the calling thread too, which Rayon may use when the workload is small.
+    let thread_ids: Arc<Mutex<HashSet<thread::ThreadId>>> =
+        Arc::new(Mutex::new(HashSet::new()));
+
     let file_metrics: Vec<_> = files
         .par_iter()
         .filter_map(|path| {
+            thread_ids.lock().unwrap().insert(thread::current().id());
+
             let path_str = path.to_string_lossy().to_string();
             let source = match fs::read_to_string(path) {
                 Ok(s) => s,
@@ -57,8 +68,58 @@ pub fn analyze(config: &Config) -> Result<AnalysisResult> {
 
     if config.timing {
         result.elapsed_secs = elapsed.as_secs_f64();
-        result.num_threads = rayon::current_num_threads();
+        result.num_threads = thread_ids.lock().unwrap().len();
     }
 
     Ok(result)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use std::fs;
+
+    fn write_ts_file(dir: &std::path::Path, name: &str, content: &str) -> std::path::PathBuf {
+        let path = dir.join(name);
+        fs::write(&path, content).unwrap();
+        path
+    }
+
+    /// `num_threads` must never exceed the number of files processed, because
+    /// with fewer files than pool threads only a subset of threads participates.
+    #[test]
+    fn num_threads_does_not_exceed_file_count() {
+        let dir = tempdir();
+        // Single tiny file — at most one thread can do work.
+        let path = write_ts_file(&dir, "single.ts", "const x = 1;\n");
+
+        let mut config = Config::new(vec![path]);
+        config.timing = true;
+
+        let result = analyze(&config).unwrap();
+
+        assert_eq!(result.total_files, 1);
+        assert_eq!(
+            result.num_threads, 1,
+            "only 1 file → only 1 thread should be reported, got {}",
+            result.num_threads
+        );
+    }
+
+    /// When timing is disabled, `num_threads` stays at its zero default.
+    #[test]
+    fn num_threads_is_zero_when_timing_disabled() {
+        let dir = tempdir();
+        let path = write_ts_file(&dir, "single2.ts", "const x = 1;\n");
+        let config = Config::new(vec![path]);
+
+        let result = analyze(&config).unwrap();
+        assert_eq!(result.num_threads, 0);
+    }
+
+    fn tempdir() -> std::path::PathBuf {
+        let dir = std::env::temp_dir().join(format!("tsm_test_{}", std::process::id()));
+        fs::create_dir_all(&dir).unwrap();
+        dir
+    }
 }
