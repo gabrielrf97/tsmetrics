@@ -1,5 +1,6 @@
 pub mod closure_depth;
 pub mod cyclo;
+pub mod long_param_list;
 pub mod halstead;
 pub mod loc;
 pub mod maintainability;
