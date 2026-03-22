@@ -40,6 +40,9 @@ fn collect_classes(node: Node, source: &[u8], file_path: &str, out: &mut Vec<Cla
             method_count: count_methods(node),
             wmc: compute_wmc(node, source),
             noi: noi::count_implemented_interfaces(node),
+            // Additional OO metrics are filled in by compute_file_metrics
+            // after all per-file computations complete.
+            ..crate::structs::ClassMetrics::default()
         });
     }
     let mut cursor = node.walk();

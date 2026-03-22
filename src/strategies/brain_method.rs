@@ -85,6 +85,7 @@ mod tests {
             cyclomatic_complexity,
             max_nesting,
             param_count: 0,
+            ..FunctionMetrics::default()
         }
     }
 
@@ -202,6 +203,7 @@ mod tests {
             cyclomatic_complexity: 10,
             max_nesting: 5,
             param_count: 0,
+            ..FunctionMetrics::default()
         };
         let results = detect_brain_methods(&[func], &config);
         assert!(results.is_empty());
