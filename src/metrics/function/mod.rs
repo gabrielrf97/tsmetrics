@@ -1,3 +1,4 @@
+pub mod closure_depth;
 pub mod cyclo;
 pub mod halstead;
 pub mod loc;
