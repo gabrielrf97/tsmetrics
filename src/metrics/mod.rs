@@ -1,6 +1,7 @@
 pub mod class;
 pub mod file;
 pub mod function;
+pub mod module;
 pub mod react;
 
 use crate::structs::FileMetrics;
