@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Pure Function Ratio — TSM Docs</title>
+  <meta name="description" content="Pure Function Ratio measures the fraction of functions in a file that have no detected side effects — a key indicator of functional programming quality.">
+  <meta property="og:title" content="Pure Function Ratio — TSM">
+  <meta property="og:description" content="Fraction of functions with no detected side effects.">
+  <meta property="og:type" content="website">
+  <meta property="og:url" content="https://gabrielrf97.github.io/tsm/metrics/pure-function-ratio.html">
+  <link rel="stylesheet" href="../style.css">
+</head>
+<body>
+  <div class="layout">
+    <aside class="sidebar">
+      <div class="sidebar-header">
+        <a href="../index.html" class="logo">TSM</a>
+        <p class="sidebar-subtitle">TypeScript Static Analyzer</p>
+      </div>
+      <nav class="sidebar-nav">
+        <div class="nav-section">
+          <div class="nav-section-title">Getting Started</div>
+          <a href="../index.html">Introduction</a>
+          <a href="../getting-started.html">Installation</a>
+          <a href="../configuration.html">Configuration</a>
+          <a href="../cli.html">CLI Reference</a>
+          <a href="../output-formats.html">Output Formats</a>
+        </div>
+        <div class="nav-section">
+          <div class="nav-section-title">Metrics</div>
+          <a href="index.html">Overview</a>
+          <div class="nav-group-label">Function</div>
+          <a href="cyclomatic.html">Cyclomatic Complexity</a>
+          <a href="halstead.html">Halstead Volume</a>
+          <a href="maintainability.html">Maintainability Index</a>
+          <a href="closure-depth.html">Closure Depth</a>
+          <a href="long-param-list.html">Long Parameter List</a>
+          <div class="nav-group-label">Class</div>
+          <a href="wmc.html">WMC</a>
+          <a href="dit.html">DIT</a>
+          <a href="nom.html">NOM / NOAM / NOOM</a>
+          <a href="woc.html">WOC</a>
+          <a href="tcc.html">TCC</a>
+          <a href="cbo.html">CBO</a>
+          <a href="rfc.html">RFC</a>
+          <a href="noi.html">NOI</a>
+          <div class="nav-group-label">React / FP</div>
+          <a href="used-components.html">Used Components</a>
+          <a href="jsx-nesting.html">JSX Nesting</a>
+          <a href="hook-complexity.html">Hook Complexity</a>
+          <a href="hook-cohesion.html">Hook Cohesion</a>
+          <a href="effect-density.html">Effect Density</a>
+          <a href="component-responsibility.html">Component Responsibility</a>
+          <a href="prop-drilling.html">Prop Drilling</a>
+          <a href="render-complexity.html">Render Complexity</a>
+          <div class="nav-group-label">Module</div>
+          <a href="module-cohesion.html">Module Cohesion</a>
+          <a href="function-coupling.html">Function Coupling</a>
+          <a href="pure-function-ratio.html" class="active">Pure Function Ratio</a>
+          <div class="nav-group-label">File</div>
+          <a href="technical-debt.html">Technical Debt</a>
+        </div>
+        <div class="nav-section">
+          <div class="nav-section-title">Strategies</div>
+          <a href="../strategies/index.html">Overview</a>
+          <a href="../strategies/god-class.html">God Class</a>
+          <a href="../strategies/brain-method.html">Brain Method</a>
+          <a href="../strategies/feature-envy.html">Feature Envy</a>
+          <a href="../strategies/refused-bequest.html">Refused Bequest</a>
+        </div>
+      </nav>
+    </aside>
+    <main class="content">
+      <div class="breadcrumb">
+        <a href="../index.html">Docs</a><span class="breadcrumb-sep">›</span>
+        <a href="index.html">Metrics</a><span class="breadcrumb-sep">›</span>
+        <span>Pure Function Ratio</span>
+      </div>
+      <div class="page-header">
+        <span class="badge badge-file">Module</span>
+        <h1>Pure Function Ratio</h1>
+        <p class="tagline">What fraction of this file's functions are free of side effects?</p>
+      </div>
+
+      <h2>What it measures</h2>
+      <p>Pure Function Ratio (PFR) reports the proportion of functions in a file that TSM classifies as <em>pure</em> — that is, having no detected side effects. Pure functions are easier to test, compose, and reason about.</p>
+      <p>A PFR of 1.0 means every function in the file is pure. A PFR of 0.0 means every function has at least one side effect indicator.</p>
+
+      <h2>How it's computed</h2>
+      <div class="formula">
+PFR = pure_functions / total_functions
+
+<span class="comment">Defaults to 1.0 when no functions are present.</span>
+      </div>
+
+      <h2>Impurity indicators</h2>
+      <p>A function is marked <em>impure</em> if any of these patterns are detected in its body:</p>
+      <table class="threshold-table">
+        <thead><tr><th>Pattern</th><th>Example</th></tr></thead>
+        <tbody>
+          <tr><td>Accesses <code>this</code></td><td><code>this.state = …</code></td></tr>
+          <tr><td>Calls known impure APIs</td><td><code>console.log()</code>, <code>fetch()</code>, <code>Math.random()</code>, <code>Date.now()</code>, <code>setTimeout()</code></td></tr>
+          <tr><td>Mutates a parameter property</td><td><code>param.x = 1</code></td></tr>
+          <tr><td>Writes to outer-scope variables</td><td><code>outerVar = …</code></td></tr>
+          <tr><td>Uses <code>await</code></td><td><code>await fetch(…)</code></td></tr>
+          <tr><td>Calls array mutation methods</td><td><code>arr.push()</code>, <code>arr.splice()</code>, <code>arr.sort()</code></td></tr>
+          <tr><td>Uses <code>delete</code></td><td><code>delete obj.key</code></td></tr>
+        </tbody>
+      </table>
+
+      <h2>Example</h2>
+      <div class="code-block">
+        <div class="code-block-header">TypeScript — PFR: 0.5 (1 pure, 1 impure)</div>
+        <pre><span class="cmt">// Pure — no side effects</span>
+<span class="kw">export function</span> <span class="fn">add</span>(a: <span class="ty">number</span>, b: <span class="ty">number</span>): <span class="ty">number</span> {
+  <span class="kw">return</span> a + b;
+}
+
+<span class="cmt">// Impure — console.log + fetch</span>
+<span class="kw">export async function</span> <span class="fn">loadUser</span>(id: <span class="ty">string</span>) {
+  console.log(<span class="str">'loading'</span>, id);
+  <span class="kw">return await</span> <span class="fn">fetch</span>(<span class="str">`/api/users/${id}`</span>);
+}</pre>
+      </div>
+
+      <div class="note">
+        <strong>Note:</strong> Impurity detection is heuristic-based and conservative — it may flag functions that are effectively pure but use a pattern that looks impure (e.g. <code>arr.sort()</code> on a locally-created array). Use this as a signal, not a guarantee.
+      </div>
+
+      <div class="page-nav">
+        <a href="function-coupling.html" class="prev">
+          <span class="nav-dir">← Previous</span><span class="nav-title">Function Coupling</span>
+        </a>
+        <a href="technical-debt.html" class="next">
+          <span class="nav-dir">Next</span><span class="nav-title">Technical Debt →</span>
+        </a>
+      </div>
+      <a href="https://github.com/gabrielrf97/tsm/edit/main/docs/metrics/pure-function-ratio.html" class="edit-link">Edit on GitHub</a>
+    </main>
+  </div>
+</body>
+</html>

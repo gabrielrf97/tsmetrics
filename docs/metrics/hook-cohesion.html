@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Custom Hook Cohesion — TSM Docs</title>
+  <meta name="description" content="Custom Hook Cohesion measures how well a custom hook's return values relate to shared internal state — low scores indicate a hook that should be split.">
+  <meta property="og:title" content="Custom Hook Cohesion — TSM">
+  <meta property="og:description" content="Measures how well a custom hook's return values share internal state.">
+  <meta property="og:type" content="website">
+  <meta property="og:url" content="https://gabrielrf97.github.io/tsm/metrics/hook-cohesion.html">
+  <link rel="stylesheet" href="../style.css">
+</head>
+<body>
+  <div class="layout">
+    <aside class="sidebar">
+      <div class="sidebar-header">
+        <a href="../index.html" class="logo">TSM</a>
+        <p class="sidebar-subtitle">TypeScript Static Analyzer</p>
+      </div>
+      <nav class="sidebar-nav">
+        <div class="nav-section">
+          <div class="nav-section-title">Getting Started</div>
+          <a href="../index.html">Introduction</a>
+          <a href="../getting-started.html">Installation</a>
+          <a href="../configuration.html">Configuration</a>
+          <a href="../cli.html">CLI Reference</a>
+          <a href="../output-formats.html">Output Formats</a>
+        </div>
+        <div class="nav-section">
+          <div class="nav-section-title">Metrics</div>
+          <a href="index.html">Overview</a>
+          <div class="nav-group-label">Function</div>
+          <a href="cyclomatic.html">Cyclomatic Complexity</a>
+          <a href="halstead.html">Halstead Volume</a>
+          <a href="maintainability.html">Maintainability Index</a>
+          <a href="closure-depth.html">Closure Depth</a>
+          <a href="long-param-list.html">Long Parameter List</a>
+          <div class="nav-group-label">Class</div>
+          <a href="wmc.html">WMC</a>
+          <a href="dit.html">DIT</a>
+          <a href="nom.html">NOM / NOAM / NOOM</a>
+          <a href="woc.html">WOC</a>
+          <a href="tcc.html">TCC</a>
+          <a href="cbo.html">CBO</a>
+          <a href="rfc.html">RFC</a>
+          <a href="noi.html">NOI</a>
+          <div class="nav-group-label">React / FP</div>
+          <a href="used-components.html">Used Components</a>
+          <a href="jsx-nesting.html">JSX Nesting</a>
+          <a href="hook-complexity.html">Hook Complexity</a>
+          <a href="hook-cohesion.html" class="active">Hook Cohesion</a>
+          <a href="effect-density.html">Effect Density</a>
+          <a href="component-responsibility.html">Component Responsibility</a>
+          <a href="prop-drilling.html">Prop Drilling</a>
+          <a href="render-complexity.html">Render Complexity</a>
+          <div class="nav-group-label">Module</div>
+          <a href="module-cohesion.html">Module Cohesion</a>
+          <a href="function-coupling.html">Function Coupling</a>
+          <a href="pure-function-ratio.html">Pure Function Ratio</a>
+          <div class="nav-group-label">File</div>
+          <a href="technical-debt.html">Technical Debt</a>
+        </div>
+        <div class="nav-section">
+          <div class="nav-section-title">Strategies</div>
+          <a href="../strategies/index.html">Overview</a>
+          <a href="../strategies/god-class.html">God Class</a>
+          <a href="../strategies/brain-method.html">Brain Method</a>
+          <a href="../strategies/feature-envy.html">Feature Envy</a>
+          <a href="../strategies/refused-bequest.html">Refused Bequest</a>
+        </div>
+      </nav>
+    </aside>
+    <main class="content">
+      <div class="breadcrumb">
+        <a href="../index.html">Docs</a><span class="breadcrumb-sep">›</span>
+        <a href="index.html">Metrics</a><span class="breadcrumb-sep">›</span>
+        <span>Custom Hook Cohesion</span>
+      </div>
+      <div class="page-header">
+        <span class="badge badge-react">React / FP</span>
+        <h1>Custom Hook Cohesion</h1>
+        <p class="tagline">Do a hook's return values share internal state? Low scores mean the hook should be split.</p>
+      </div>
+
+      <h2>What it measures</h2>
+      <p>Custom Hook Cohesion (CHC) is the functional-programming equivalent of <a href="tcc.html">Tight Class Cohesion</a>. Instead of class methods sharing fields, a custom hook's <em>return values</em> should share internal state variables.</p>
+      <p>A hook with CHC = 1.0 is perfectly focused — all its return values relate to the same internal state. A hook with CHC = 0.0 is bundling unrelated concerns and should be split into smaller hooks.</p>
+
+      <h2>How it's computed</h2>
+      <p><strong>Internal state</strong> = variables from <code>useState</code>, <code>useRef</code>, <code>useReducer</code>, <code>useMemo</code>, <code>useCallback</code>.</p>
+      <p>Two return values are <em>connected</em> if they both reference at least one common internal state variable.</p>
+      <div class="formula">
+CHC = connected_return_pairs / total_possible_pairs
+
+<span class="comment">Special cases: 0 or 1 return value → CHC = 1.0 (vacuously cohesive)</span>
+      </div>
+
+      <h2>Examples</h2>
+      <div class="code-block">
+        <div class="code-block-header">TypeScript — CHC = 1.0 (focused hook)</div>
+        <pre><span class="kw">function</span> <span class="fn">useCounter</span>(initial = <span class="num">0</span>) {
+  <span class="kw">const</span> [count, setCount] = <span class="fn">useState</span>(initial);
+  <span class="kw">const</span> increment = () => <span class="fn">setCount</span>(c => c + <span class="num">1</span>);
+  <span class="kw">const</span> decrement = () => <span class="fn">setCount</span>(c => c - <span class="num">1</span>);
+  <span class="kw">return</span> { count, increment, decrement };
+  <span class="cmt">// all 3 values share `count` state → CHC = 1.0</span>
+}</pre>
+      </div>
+
+      <div class="code-block">
+        <div class="code-block-header">TypeScript — CHC = 0.0 (should be split)</div>
+        <pre><span class="kw">function</span> <span class="fn">useUserAndTheme</span>() {
+  <span class="kw">const</span> [user, setUser] = <span class="fn">useState</span>(<span class="kw">null</span>);
+  <span class="kw">const</span> [theme, setTheme] = <span class="fn">useState</span>(<span class="str">"light"</span>);
+  <span class="kw">return</span> { user, setUser, theme, setTheme };
+  <span class="cmt">// user/setUser share `user`; theme/setTheme share `theme`
+  // but no pair crosses both → CHC = 0.0</span>
+}</pre>
+      </div>
+
+      <div class="tip">
+        <strong>Fix:</strong> Split <code>useUserAndTheme</code> into <code>useUser</code> and <code>useTheme</code>. Each will have CHC = 1.0.
+      </div>
+
+      <div class="page-nav">
+        <a href="hook-complexity.html" class="prev">
+          <span class="nav-dir">← Previous</span><span class="nav-title">Hook Complexity</span>
+        </a>
+        <a href="effect-density.html" class="next">
+          <span class="nav-dir">Next</span><span class="nav-title">Effect Density →</span>
+        </a>
+      </div>
+      <a href="https://github.com/gabrielrf97/tsm/edit/main/docs/metrics/hook-cohesion.html" class="edit-link">Edit on GitHub</a>
+    </main>
+  </div>
+</body>
+</html>

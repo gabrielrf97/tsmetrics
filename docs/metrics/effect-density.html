@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Effect Density — TSM Docs</title>
+  <meta name="description" content="Effect Density measures the ratio of useEffect calls to source lines of code in a React component.">
+  <meta property="og:title" content="Effect Density — TSM">
+  <meta property="og:description" content="Ratio of useEffect calls to component SLOC.">
+  <meta property="og:type" content="website">
+  <meta property="og:url" content="https://gabrielrf97.github.io/tsm/metrics/effect-density.html">
+  <link rel="stylesheet" href="../style.css">
+</head>
+<body>
+  <div class="layout">
+    <aside class="sidebar">
+      <div class="sidebar-header">
+        <a href="../index.html" class="logo">TSM</a>
+        <p class="sidebar-subtitle">TypeScript Static Analyzer</p>
+      </div>
+      <nav class="sidebar-nav">
+        <div class="nav-section">
+          <div class="nav-section-title">Getting Started</div>
+          <a href="../index.html">Introduction</a>
+          <a href="../getting-started.html">Installation</a>
+          <a href="../configuration.html">Configuration</a>
+          <a href="../cli.html">CLI Reference</a>
+          <a href="../output-formats.html">Output Formats</a>
+        </div>
+        <div class="nav-section">
+          <div class="nav-section-title">Metrics</div>
+          <a href="index.html">Overview</a>
+          <div class="nav-group-label">Function</div>
+          <a href="cyclomatic.html">Cyclomatic Complexity</a>
+          <a href="halstead.html">Halstead Volume</a>
+          <a href="maintainability.html">Maintainability Index</a>
+          <a href="closure-depth.html">Closure Depth</a>
+          <a href="long-param-list.html">Long Parameter List</a>
+          <div class="nav-group-label">Class</div>
+          <a href="wmc.html">WMC</a>
+          <a href="dit.html">DIT</a>
+          <a href="nom.html">NOM / NOAM / NOOM</a>
+          <a href="woc.html">WOC</a>
+          <a href="tcc.html">TCC</a>
+          <a href="cbo.html">CBO</a>
+          <a href="rfc.html">RFC</a>
+          <a href="noi.html">NOI</a>
+          <div class="nav-group-label">React / FP</div>
+          <a href="used-components.html">Used Components</a>
+          <a href="jsx-nesting.html">JSX Nesting</a>
+          <a href="hook-complexity.html">Hook Complexity</a>
+          <a href="hook-cohesion.html">Hook Cohesion</a>
+          <a href="effect-density.html" class="active">Effect Density</a>
+          <a href="component-responsibility.html">Component Responsibility</a>
+          <a href="prop-drilling.html">Prop Drilling</a>
+          <a href="render-complexity.html">Render Complexity</a>
+          <div class="nav-group-label">Module</div>
+          <a href="module-cohesion.html">Module Cohesion</a>
+          <a href="function-coupling.html">Function Coupling</a>
+          <a href="pure-function-ratio.html">Pure Function Ratio</a>
+          <div class="nav-group-label">File</div>
+          <a href="technical-debt.html">Technical Debt</a>
+        </div>
+        <div class="nav-section">
+          <div class="nav-section-title">Strategies</div>
+          <a href="../strategies/index.html">Overview</a>
+          <a href="../strategies/god-class.html">God Class</a>
+          <a href="../strategies/brain-method.html">Brain Method</a>
+          <a href="../strategies/feature-envy.html">Feature Envy</a>
+          <a href="../strategies/refused-bequest.html">Refused Bequest</a>
+        </div>
+      </nav>
+    </aside>
+    <main class="content">
+      <div class="breadcrumb">
+        <a href="../index.html">Docs</a><span class="breadcrumb-sep">›</span>
+        <a href="index.html">Metrics</a><span class="breadcrumb-sep">›</span>
+        <span>Effect Density</span>
+      </div>
+      <div class="page-header">
+        <span class="badge badge-react">React / FP</span>
+        <h1>Effect Density</h1>
+        <p class="tagline">Ratio of side-effect hooks to component SLOC.</p>
+      </div>
+
+      <h2>What it measures</h2>
+      <p>Effect Density measures what fraction of a component's source code is dedicated to side effects. A high density means side-effect logic dominates the component — often a sign it should be split or that effects should be extracted into a custom hook.</p>
+      <p>The following hooks are counted as effects: <code>useEffect</code>, <code>useLayoutEffect</code>, <code>useInsertionEffect</code>.</p>
+
+      <h2>How it's computed</h2>
+      <div class="formula">
+Effect Density = effect_count / component_sloc
+
+<span class="comment">effect_count = useEffect + useLayoutEffect + useInsertionEffect calls
+component_sloc = non-blank lines in the component function body</span>
+      </div>
+      <p>Only effect calls at the <em>direct component scope</em> are counted — effects inside nested callbacks are excluded.</p>
+
+      <h2>Example</h2>
+      <div class="code-block">
+        <div class="code-block-header">TypeScript — effect density: 2/20 = 0.10</div>
+        <pre><span class="kw">function</span> <span class="fn">Dashboard</span>() {
+  <span class="kw">const</span> [data, setData] = <span class="fn">useState</span>([]);
+
+  <span class="fn">useEffect</span>(() => {           <span class="cmt">// effect 1</span>
+    fetchData().then(setData);
+  }, []);
+
+  <span class="fn">useEffect</span>(() => {           <span class="cmt">// effect 2</span>
+    document.title = <span class="str">`${data.length} items`</span>;
+  }, [data]);
+
+  <span class="kw">return</span> <span class="str">&lt;List items={data} /&gt;</span>;
+}
+<span class="cmt">// 2 effects / ~20 SLOC = 0.10</span></pre>
+      </div>
+
+      <div class="tip">
+        <strong>Tip:</strong> Effect density above ~0.15 often indicates a component managing too many side effects. Extract into a custom hook like <code>useDashboardData()</code>.
+      </div>
+
+      <div class="page-nav">
+        <a href="hook-cohesion.html" class="prev">
+          <span class="nav-dir">← Previous</span><span class="nav-title">Hook Cohesion</span>
+        </a>
+        <a href="component-responsibility.html" class="next">
+          <span class="nav-dir">Next</span><span class="nav-title">Component Responsibility →</span>
+        </a>
+      </div>
+      <a href="https://github.com/gabrielrf97/tsm/edit/main/docs/metrics/effect-density.html" class="edit-link">Edit on GitHub</a>
+    </main>
+  </div>
+</body>
+</html>

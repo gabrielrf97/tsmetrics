@@ -4,11 +4,16 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Configuration — TSM Docs</title>
+  <meta name="description" content="Customize TSM metric thresholds and path exclusions via a tsm.yaml config file.">
+  <meta property="og:title" content="Configuration — TSM">
+  <meta property="og:description" content="Customize metric thresholds and path exclusions via tsm.yaml.">
+  <meta property="og:type" content="website">
+  <meta property="og:url" content="https://gabrielrf97.github.io/tsm/configuration.html">
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
   <div class="layout">
-    
+
     <aside class="sidebar">
       <div class="sidebar-header">
         <a href="index.html" class="logo">TSM</a>
@@ -26,9 +31,13 @@
         <div class="nav-section">
           <div class="nav-section-title">Metrics</div>
           <a href="metrics/index.html">Overview</a>
+          <div class="nav-group-label">Function</div>
           <a href="metrics/cyclomatic.html">Cyclomatic Complexity</a>
           <a href="metrics/halstead.html">Halstead Volume</a>
           <a href="metrics/maintainability.html">Maintainability Index</a>
+          <a href="metrics/closure-depth.html">Closure Depth</a>
+          <a href="metrics/long-param-list.html">Long Parameter List</a>
+          <div class="nav-group-label">Class</div>
           <a href="metrics/wmc.html">WMC</a>
           <a href="metrics/dit.html">DIT</a>
           <a href="metrics/nom.html">NOM / NOAM / NOOM</a>
@@ -37,8 +46,20 @@
           <a href="metrics/cbo.html">CBO</a>
           <a href="metrics/rfc.html">RFC</a>
           <a href="metrics/noi.html">NOI</a>
+          <div class="nav-group-label">React / FP</div>
           <a href="metrics/used-components.html">Used Components</a>
           <a href="metrics/jsx-nesting.html">JSX Nesting</a>
+          <a href="metrics/hook-complexity.html">Hook Complexity</a>
+          <a href="metrics/hook-cohesion.html">Hook Cohesion</a>
+          <a href="metrics/effect-density.html">Effect Density</a>
+          <a href="metrics/component-responsibility.html">Component Responsibility</a>
+          <a href="metrics/prop-drilling.html">Prop Drilling</a>
+          <a href="metrics/render-complexity.html">Render Complexity</a>
+          <div class="nav-group-label">Module</div>
+          <a href="metrics/module-cohesion.html">Module Cohesion</a>
+          <a href="metrics/function-coupling.html">Function Coupling</a>
+          <a href="metrics/pure-function-ratio.html">Pure Function Ratio</a>
+          <div class="nav-group-label">File</div>
           <a href="metrics/technical-debt.html">Technical Debt</a>
         </div>
         <div class="nav-section">
@@ -51,6 +72,7 @@
         </div>
       </nav>
     </aside>
+
     <main class="content">
 
       <div class="breadcrumb">
@@ -59,14 +81,22 @@
       </div>
       <div class="page-header">
         <h1>Configuration</h1>
-        <p class="tagline">Customize metric thresholds via <code>tsm.yaml</code>.</p>
+        <p class="tagline">Customize metric thresholds and path exclusions via <code>tsm.yaml</code>.</p>
       </div>
 
       <h2>tsm.yaml</h2>
-      <p>TSM looks for a <code>tsm.yaml</code> file in each directory being analyzed (then its parents). If no file is found, all thresholds fall back to built-in defaults.</p>
+      <p>TSM looks for a <code>tsm.yaml</code> file in the current working directory (then its parents). If not found, all settings fall back to built-in defaults.</p>
       <div class="code-block">
         <div class="code-block-header">tsm.yaml</div>
-        <pre><span class="cmt"># Override any subset of thresholds. Omitted keys use defaults.</span>
+        <pre><span class="cmt"># All fields are optional — omitted keys use defaults.</span>
+
+<span class="cmt"># Exclude paths from analysis (glob patterns)</span>
+exclude:
+  - <span class="str">"**/*.test.ts"</span>
+  - <span class="str">"**/*.spec.tsx"</span>
+  - <span class="str">"src/generated/**"</span>
+
+<span class="cmt"># Override warning/error thresholds per metric</span>
 thresholds:
   cyclomatic_complexity:
     warning: 10    <span class="cmt"># default: 10</span>
@@ -88,6 +118,15 @@ thresholds:
     error: 5       <span class="cmt"># default: 5</span></pre>
       </div>
 
+      <h2>exclude</h2>
+      <p>The <code>exclude</code> field accepts a list of glob patterns. Matched files are skipped entirely — no metrics are computed for them.</p>
+      <p>TSM also has built-in default exclusions that always apply:</p>
+      <div class="code-block">
+        <div class="code-block-header">always excluded</div>
+        <pre>node_modules/    .git/    dist/    build/    coverage/    .next/</pre>
+      </div>
+      <p>Patterns in <code>exclude</code> are additive — they extend, not replace, the defaults.</p>
+
       <h2>Default thresholds</h2>
       <table class="threshold-table">
         <thead><tr><th>Metric</th><th>Warning</th><th>Error</th><th>Description</th></tr></thead>
@@ -107,20 +146,24 @@ thresholds:
         <li><span class="sev-warning">Warning</span> — value &ge; <code>warning</code> threshold (but &lt; <code>error</code>)</li>
         <li><span class="sev-error">Error</span> — value &ge; <code>error</code> threshold</li>
       </ul>
-      <p>Violations are reported in the output (table and HTML formats show a separate violations table; JSON includes them in the <code>violations</code> array).</p>
+      <p>Violations appear in the output (table and HTML formats show a violations table; JSON includes them in the <code>violations</code> array).</p>
 
       <div class="warning">
         <strong>Constraint:</strong> <code>warning</code> must be &le; <code>error</code>. TSM will fail with an error message if this is violated.
       </div>
 
       <h2>Partial overrides</h2>
-      <p>You can override just <code>warning</code> or just <code>error</code> — the other value will remain at its default:</p>
+      <p>You can override just <code>warning</code> or just <code>error</code> — the other stays at its default:</p>
       <div class="config-block">thresholds:
   cyclomatic_complexity:
     warning: 7   # only override warning; error stays at 25</div>
 
       <h2>Stricter CI configuration</h2>
-      <div class="config-block">thresholds:
+      <div class="config-block">exclude:
+  - "**/*.test.ts"
+  - "**/*.spec.tsx"
+
+thresholds:
   cyclomatic_complexity:
     warning: 7
     error: 15
