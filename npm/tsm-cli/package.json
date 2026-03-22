@@ -1,0 +1,34 @@
+{
+  "name": "tsm-cli",
+  "version": "0.1.0",
+  "description": "Fast, tree-sitter-powered TypeScript static analyzer",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/gabrielrf97/tsm.git"
+  },
+  "homepage": "https://gabrielrf97.github.io/tsm/",
+  "license": "MIT",
+  "keywords": [
+    "typescript",
+    "static-analysis",
+    "metrics",
+    "linter",
+    "tree-sitter"
+  ],
+  "bin": {
+    "tsm": "bin/tsm.js"
+  },
+  "files": [
+    "bin/"
+  ],
+  "optionalDependencies": {
+    "@tsm-cli/darwin-arm64": "0.1.0",
+    "@tsm-cli/darwin-x64": "0.1.0",
+    "@tsm-cli/linux-x64": "0.1.0",
+    "@tsm-cli/linux-arm64": "0.1.0",
+    "@tsm-cli/win32-x64": "0.1.0"
+  },
+  "engines": {
+    "node": ">=14"
+  }
+}

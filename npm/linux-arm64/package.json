@@ -1,0 +1,18 @@
+{
+  "name": "@tsm-cli/linux-arm64",
+  "version": "0.1.0",
+  "description": "Linux ARM64 binary for tsm-cli",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/gabrielrf97/tsm.git"
+  },
+  "license": "MIT",
+  "os": ["linux"],
+  "cpu": ["arm64"],
+  "files": [
+    "bin/"
+  ],
+  "bin": {
+    "tsm": "bin/tsm"
+  }
+}

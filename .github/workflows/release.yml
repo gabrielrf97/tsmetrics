@@ -1,0 +1,202 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - "v*"
+
+permissions:
+  contents: write
+
+jobs:
+  # ─── Build binaries ──────────────────────────────────────────────────────────
+
+  build:
+    name: Build ${{ matrix.target }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - target: aarch64-apple-darwin
+            os: macos-latest
+            npm_dir: darwin-arm64
+          - target: x86_64-apple-darwin
+            os: macos-latest
+            npm_dir: darwin-x64
+          - target: x86_64-unknown-linux-gnu
+            os: ubuntu-latest
+            npm_dir: linux-x64
+          - target: aarch64-unknown-linux-gnu
+            os: ubuntu-latest
+            npm_dir: linux-arm64
+            use_cross: true
+          - target: x86_64-pc-windows-msvc
+            os: windows-latest
+            npm_dir: win32-x64
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Rust toolchain
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: ${{ matrix.target }}
+
+      - name: Install cross (for cross-compilation)
+        if: matrix.use_cross
+        run: cargo install cross --git https://github.com/cross-rs/cross
+
+      - name: Build (native)
+        if: "!matrix.use_cross"
+        run: cargo build --release --target ${{ matrix.target }}
+
+      - name: Build (cross)
+        if: matrix.use_cross
+        run: cross build --release --target ${{ matrix.target }}
+
+      - name: Prepare binary (Unix)
+        if: runner.os != 'Windows'
+        run: |
+          mkdir -p npm/${{ matrix.npm_dir }}/bin
+          cp target/${{ matrix.target }}/release/tsm npm/${{ matrix.npm_dir }}/bin/tsm
+          chmod +x npm/${{ matrix.npm_dir }}/bin/tsm
+
+      - name: Prepare binary (Windows)
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory -Force -Path npm/${{ matrix.npm_dir }}/bin
+          Copy-Item target/${{ matrix.target }}/release/tsm.exe npm/${{ matrix.npm_dir }}/bin/tsm.exe
+
+      - name: Upload binary artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: binary-${{ matrix.npm_dir }}
+          path: npm/${{ matrix.npm_dir }}/bin/
+          if-no-files-found: error
+
+  # ─── Publish to npm ──────────────────────────────────────────────────────────
+
+  publish-npm:
+    name: Publish npm packages
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          registry-url: "https://registry.npmjs.org"
+
+      # Pull version from git tag (strip leading 'v')
+      - name: Set version
+        id: version
+        run: echo "VERSION=${GITHUB_REF_NAME#v}" >> "$GITHUB_OUTPUT"
+
+      # Download all binaries built in the matrix
+      - name: Download all binaries
+        uses: actions/download-artifact@v4
+        with:
+          pattern: binary-*
+          path: artifacts/
+
+      # Place binaries into the right npm subdirectory
+      - name: Stage binaries
+        run: |
+          for dir in darwin-arm64 darwin-x64 linux-x64 linux-arm64 win32-x64; do
+            mkdir -p npm/${dir}/bin
+            cp -r artifacts/binary-${dir}/. npm/${dir}/bin/
+            # Ensure Unix binaries are executable
+            chmod +x npm/${dir}/bin/tsm 2>/dev/null || true
+          done
+
+      # Stamp version into every package.json
+      - name: Stamp versions
+        run: |
+          VERSION=${{ steps.version.outputs.VERSION }}
+          for dir in darwin-arm64 darwin-x64 linux-x64 linux-arm64 win32-x64; do
+            node -e "
+              const fs = require('fs');
+              const p = 'npm/${dir}/package.json';
+              const pkg = JSON.parse(fs.readFileSync(p, 'utf8'));
+              pkg.version = '${VERSION}';
+              fs.writeFileSync(p, JSON.stringify(pkg, null, 2) + '\n');
+            "
+          done
+          node -e "
+            const fs = require('fs');
+            const p = 'npm/tsm-cli/package.json';
+            const pkg = JSON.parse(fs.readFileSync(p, 'utf8'));
+            pkg.version = '${VERSION}';
+            for (const dep of Object.keys(pkg.optionalDependencies)) {
+              pkg.optionalDependencies[dep] = '${VERSION}';
+            }
+            fs.writeFileSync(p, JSON.stringify(pkg, null, 2) + '\n');
+          "
+
+      # Publish platform packages first (umbrella depends on them)
+      - name: Publish platform packages
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+        run: |
+          for dir in darwin-arm64 darwin-x64 linux-x64 linux-arm64 win32-x64; do
+            cd npm/${dir}
+            npm publish --access public
+            cd ../..
+          done
+
+      - name: Publish umbrella package
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+        run: |
+          cd npm/tsm-cli
+          npm publish --access public
+
+  # ─── GitHub Release ──────────────────────────────────────────────────────────
+
+  github-release:
+    name: Create GitHub Release
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Download all binaries
+        uses: actions/download-artifact@v4
+        with:
+          pattern: binary-*
+          path: artifacts/
+
+      - name: Bundle release archives
+        run: |
+          mkdir -p release-assets
+          VERSION=${GITHUB_REF_NAME}
+
+          # darwin-arm64
+          tar -czf release-assets/tsm-${VERSION}-darwin-arm64.tar.gz \
+            -C artifacts/binary-darwin-arm64 tsm
+
+          # darwin-x64
+          tar -czf release-assets/tsm-${VERSION}-darwin-x64.tar.gz \
+            -C artifacts/binary-darwin-x64 tsm
+
+          # linux-x64
+          tar -czf release-assets/tsm-${VERSION}-linux-x64.tar.gz \
+            -C artifacts/binary-linux-x64 tsm
+
+          # linux-arm64
+          tar -czf release-assets/tsm-${VERSION}-linux-arm64.tar.gz \
+            -C artifacts/binary-linux-arm64 tsm
+
+          # win32-x64 (zip)
+          cd artifacts/binary-win32-x64
+          zip ../../release-assets/tsm-${VERSION}-win32-x64.zip tsm.exe
+          cd ../..
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          generate_release_notes: true
+          files: release-assets/*

@@ -1,0 +1,18 @@
+{
+  "name": "@tsm-cli/darwin-arm64",
+  "version": "0.1.0",
+  "description": "macOS ARM64 binary for tsm-cli",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/gabrielrf97/tsm.git"
+  },
+  "license": "MIT",
+  "os": ["darwin"],
+  "cpu": ["arm64"],
+  "files": [
+    "bin/"
+  ],
+  "bin": {
+    "tsm": "bin/tsm"
+  }
+}
