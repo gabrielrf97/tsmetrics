@@ -79,12 +79,21 @@ pub struct Violation {
     pub severity: Severity,
 }
 
+/// Combined configuration loaded from tsm.yaml (thresholds + exclude patterns).
+pub struct TsmConfig {
+    pub thresholds: ThresholdsConfig,
+    /// Directory/file name patterns that should be excluded from scanning.
+    pub exclude: Vec<String>,
+}
+
 // ── Internal types for partial YAML deserialization ────────────────────────────
 
 #[derive(Debug, Deserialize, Default)]
 struct TsmYaml {
     #[serde(default)]
     thresholds: PartialThresholdsConfig,
+    #[serde(default)]
+    exclude: Vec<String>,
 }
 
 #[derive(Debug, Deserialize, Default)]
@@ -124,38 +133,52 @@ fn merge_threshold(
     Ok(merged)
 }
 
-/// Load thresholds from a tsm.yaml found in any of the given directories.
-/// Falls back to defaults if no file is found or the file has no `thresholds` section.
-pub fn load_thresholds(search_dirs: &[&Path]) -> anyhow::Result<ThresholdsConfig> {
+/// Load combined configuration (thresholds + exclude patterns) from tsm.yaml.
+/// Falls back to defaults if no file is found.
+pub fn load_tsm_config(search_dirs: &[&Path]) -> anyhow::Result<TsmConfig> {
     for &dir in search_dirs {
         let candidate = dir.join("tsm.yaml");
         if candidate.exists() {
-            return load_from_file(&candidate);
+            return load_tsm_config_from_file(&candidate);
         }
     }
-    Ok(ThresholdsConfig::default())
+    Ok(TsmConfig {
+        thresholds: ThresholdsConfig::default(),
+        exclude: Vec::new(),
+    })
 }
 
-fn load_from_file(path: &Path) -> anyhow::Result<ThresholdsConfig> {
+fn load_tsm_config_from_file(path: &Path) -> anyhow::Result<TsmConfig> {
     let content = std::fs::read_to_string(path)?;
-    // An empty file should yield defaults
     if content.trim().is_empty() {
-        return Ok(ThresholdsConfig::default());
+        return Ok(TsmConfig {
+            thresholds: ThresholdsConfig::default(),
+            exclude: Vec::new(),
+        });
     }
     let yaml: TsmYaml = serde_yaml::from_str(&content)
         .map_err(|e| anyhow::anyhow!("Failed to parse {}: {}", path.display(), e))?;
     let defaults = ThresholdsConfig::default();
-    Ok(ThresholdsConfig {
-        cyclomatic_complexity: merge_threshold(
-            yaml.thresholds.cyclomatic_complexity,
-            defaults.cyclomatic_complexity,
-        )?,
-        loc: merge_threshold(yaml.thresholds.loc, defaults.loc)?,
-        nesting: merge_threshold(yaml.thresholds.nesting, defaults.nesting)?,
-        params: merge_threshold(yaml.thresholds.params, defaults.params)?,
-        wmc: merge_threshold(yaml.thresholds.wmc, defaults.wmc)?,
-        noi: merge_threshold(yaml.thresholds.noi, defaults.noi)?,
+    Ok(TsmConfig {
+        thresholds: ThresholdsConfig {
+            cyclomatic_complexity: merge_threshold(
+                yaml.thresholds.cyclomatic_complexity,
+                defaults.cyclomatic_complexity,
+            )?,
+            loc: merge_threshold(yaml.thresholds.loc, defaults.loc)?,
+            nesting: merge_threshold(yaml.thresholds.nesting, defaults.nesting)?,
+            params: merge_threshold(yaml.thresholds.params, defaults.params)?,
+            wmc: merge_threshold(yaml.thresholds.wmc, defaults.wmc)?,
+            noi: merge_threshold(yaml.thresholds.noi, defaults.noi)?,
+        },
+        exclude: yaml.exclude,
     })
+}
+
+/// Load thresholds from a tsm.yaml found in any of the given directories.
+/// Falls back to defaults if no file is found or the file has no `thresholds` section.
+pub fn load_thresholds(search_dirs: &[&Path]) -> anyhow::Result<ThresholdsConfig> {
+    Ok(load_tsm_config(search_dirs)?.thresholds)
 }
 
 /// Check function metrics against thresholds, returning any violations.

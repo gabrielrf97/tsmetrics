@@ -17,27 +17,30 @@ use std::time::Instant;
 
 use config::Config;
 use structs::AnalysisResult;
-use thresholds::{check_class_violations, check_function_violations, load_thresholds};
+use thresholds::{check_class_violations, check_function_violations, load_tsm_config};
 
 /// Run analysis over all TypeScript files found in the configured paths.
 pub fn analyze(config: &Config) -> Result<AnalysisResult> {
-    let files = utils::collect_ts_files(&config.paths);
+    // Load tsm.yaml config (thresholds + exclude patterns)
+    let cwd = std::env::current_dir().unwrap_or_default();
+    let mut search_dirs: Vec<&std::path::Path> = vec![cwd.as_path()];
+    let path_refs: Vec<&std::path::Path> = config.paths.iter().map(|p| p.as_path()).collect();
+    search_dirs.extend(path_refs.iter().copied());
+    let tsm_config = load_tsm_config(&search_dirs)?;
+    let thresholds_config = tsm_config.thresholds;
+
+    // Merge: YAML excludes + CLI excludes (DEFAULT_EXCLUDES already applied in collect_ts_files)
+    let mut extra_excludes: Vec<String> = tsm_config.exclude;
+    extra_excludes.extend(config.exclude.iter().cloned());
+
+    let files = utils::collect_ts_files(&config.paths, &extra_excludes);
     let verbose = config.verbose;
 
     let start = Instant::now();
 
     // Track unique OS thread IDs that actually execute work in this parallel job.
-    // Using ThreadId (instead of rayon::current_thread_index) ensures we capture
-    // the calling thread too, which Rayon may use when the workload is small.
     let thread_ids: Arc<Mutex<HashSet<thread::ThreadId>>> =
         Arc::new(Mutex::new(HashSet::new()));
-
-    // Load thresholds from tsm.yaml in cwd or any of the analyzed paths
-    let cwd = std::env::current_dir().unwrap_or_default();
-    let mut search_dirs: Vec<&std::path::Path> = vec![cwd.as_path()];
-    let path_refs: Vec<&std::path::Path> = config.paths.iter().map(|p| p.as_path()).collect();
-    search_dirs.extend(path_refs.iter().copied());
-    let thresholds_config = load_thresholds(&search_dirs)?;
 
     let file_metrics: Vec<_> = files
         .par_iter()
@@ -152,8 +155,31 @@ mod tests {
         assert_eq!(result.num_threads, 0);
     }
 
+    /// Files inside excluded directories are not analyzed.
+    #[test]
+    fn excluded_directories_are_skipped() {
+        let dir = tempdir_named("exclude_test");
+        // Write a file inside node_modules (should be skipped by default)
+        let nm_dir = dir.join("node_modules");
+        fs::create_dir_all(&nm_dir).unwrap();
+        write_ts_file(&nm_dir, "pkg.ts", "function lib() { return 1; }\n");
+        // Write a normal file that should be analyzed
+        write_ts_file(&dir, "app.ts", "function app() { return 2; }\n");
+
+        let config = Config::new(vec![dir.clone()]);
+        let result = analyze(&config).unwrap();
+
+        // Only app.ts should appear; node_modules/pkg.ts must be excluded
+        assert_eq!(result.total_files, 1);
+        assert!(result.files.iter().all(|f| !f.path.contains("node_modules")));
+    }
+
     fn tempdir() -> std::path::PathBuf {
-        let dir = std::env::temp_dir().join(format!("tsm_test_{}", std::process::id()));
+        tempdir_named("test")
+    }
+
+    fn tempdir_named(suffix: &str) -> std::path::PathBuf {
+        let dir = std::env::temp_dir().join(format!("tsm_{}_{}", std::process::id(), suffix));
         fs::create_dir_all(&dir).unwrap();
         dir
     }

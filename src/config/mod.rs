@@ -9,6 +9,8 @@ pub struct Config {
     pub min_loc: Option<usize>,
     /// When true, record and display wall-clock time and thread count after analysis.
     pub timing: bool,
+    /// Glob/directory patterns to exclude from scanning (e.g. "node_modules", ".git").
+    pub exclude: Vec<String>,
 }
 
 #[derive(Debug, Clone, PartialEq)]
@@ -28,6 +30,7 @@ impl Config {
             min_complexity: None,
             min_loc: None,
             timing: false,
+            exclude: Vec::new(),
         }
     }
 }

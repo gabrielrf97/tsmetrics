@@ -44,6 +44,12 @@ enum Commands {
         /// Show elapsed time and thread count after analysis
         #[arg(long)]
         timing: bool,
+
+        /// Glob/directory patterns to exclude from scanning (can be repeated).
+        /// Defaults: node_modules, .git, dist, build, coverage, .next.
+        /// Use --exclude to add extra patterns on top of the defaults.
+        #[arg(long = "exclude", short = 'e', num_args = 1)]
+        exclude: Vec<String>,
     },
 }
 
@@ -66,6 +72,7 @@ fn main() -> Result<()> {
             min_complexity,
             min_loc,
             timing,
+            exclude,
         } => {
             let output_format = match format {
                 Format::Table => OutputFormat::Table,
@@ -80,6 +87,7 @@ fn main() -> Result<()> {
             config.min_complexity = min_complexity;
             config.min_loc = min_loc;
             config.timing = timing;
+            config.exclude = exclude;
 
             if verbose {
                 eprintln!("Running analysis...");

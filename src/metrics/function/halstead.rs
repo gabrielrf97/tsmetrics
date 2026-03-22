@@ -136,6 +136,18 @@ pub struct FunctionHalstead {
 
 // ── public API ────────────────────────────────────────────────────────────────
 
+/// Compute Halstead metrics for a single already-parsed function `node`.
+///
+/// Unlike [`compute`], this does not re-parse the source — it uses the AST
+/// node directly.  Tokens belonging to nested functions are excluded so that
+/// each function is measured independently.
+pub fn compute_for_node(node: Node, source: &[u8]) -> HalsteadMetrics {
+    let mut operators: HashMap<String, usize> = HashMap::new();
+    let mut operands: HashMap<String, usize> = HashMap::new();
+    walk(node, source, &mut operators, &mut operands, 0);
+    HalsteadMetrics::from_maps(&operators, &operands)
+}
+
 /// Parse TypeScript `source` and return Halstead metrics for every
 /// function declaration, function expression, arrow function,
 /// generator function, or method definition found at any nesting level.
