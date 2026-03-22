@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Module Cohesion — TSM Docs</title>
+  <meta name="description" content="Module Cohesion measures how well a module's exported functions relate to each other via shared import dependencies — the FP analogue of TCC.">
+  <meta property="og:title" content="Module Cohesion — TSM">
+  <meta property="og:description" content="Fraction of exported function pairs sharing an import dependency.">
+  <meta property="og:type" content="website">
+  <meta property="og:url" content="https://gabrielrf97.github.io/tsm/metrics/module-cohesion.html">
+  <link rel="stylesheet" href="../style.css">
+</head>
+<body>
+  <div class="layout">
+    <aside class="sidebar">
+      <div class="sidebar-header">
+        <a href="../index.html" class="logo">TSM</a>
+        <p class="sidebar-subtitle">TypeScript Static Analyzer</p>
+      </div>
+      <nav class="sidebar-nav">
+        <div class="nav-section">
+          <div class="nav-section-title">Getting Started</div>
+          <a href="../index.html">Introduction</a>
+          <a href="../getting-started.html">Installation</a>
+          <a href="../configuration.html">Configuration</a>
+          <a href="../cli.html">CLI Reference</a>
+          <a href="../output-formats.html">Output Formats</a>
+        </div>
+        <div class="nav-section">
+          <div class="nav-section-title">Metrics</div>
+          <a href="index.html">Overview</a>
+          <div class="nav-group-label">Function</div>
+          <a href="cyclomatic.html">Cyclomatic Complexity</a>
+          <a href="halstead.html">Halstead Volume</a>
+          <a href="maintainability.html">Maintainability Index</a>
+          <a href="closure-depth.html">Closure Depth</a>
+          <a href="long-param-list.html">Long Parameter List</a>
+          <div class="nav-group-label">Class</div>
+          <a href="wmc.html">WMC</a>
+          <a href="dit.html">DIT</a>
+          <a href="nom.html">NOM / NOAM / NOOM</a>
+          <a href="woc.html">WOC</a>
+          <a href="tcc.html">TCC</a>
+          <a href="cbo.html">CBO</a>
+          <a href="rfc.html">RFC</a>
+          <a href="noi.html">NOI</a>
+          <div class="nav-group-label">React / FP</div>
+          <a href="used-components.html">Used Components</a>
+          <a href="jsx-nesting.html">JSX Nesting</a>
+          <a href="hook-complexity.html">Hook Complexity</a>
+          <a href="hook-cohesion.html">Hook Cohesion</a>
+          <a href="effect-density.html">Effect Density</a>
+          <a href="component-responsibility.html">Component Responsibility</a>
+          <a href="prop-drilling.html">Prop Drilling</a>
+          <a href="render-complexity.html">Render Complexity</a>
+          <div class="nav-group-label">Module</div>
+          <a href="module-cohesion.html" class="active">Module Cohesion</a>
+          <a href="function-coupling.html">Function Coupling</a>
+          <a href="pure-function-ratio.html">Pure Function Ratio</a>
+          <div class="nav-group-label">File</div>
+          <a href="technical-debt.html">Technical Debt</a>
+        </div>
+        <div class="nav-section">
+          <div class="nav-section-title">Strategies</div>
+          <a href="../strategies/index.html">Overview</a>
+          <a href="../strategies/god-class.html">God Class</a>
+          <a href="../strategies/brain-method.html">Brain Method</a>
+          <a href="../strategies/feature-envy.html">Feature Envy</a>
+          <a href="../strategies/refused-bequest.html">Refused Bequest</a>
+        </div>
+      </nav>
+    </aside>
+    <main class="content">
+      <div class="breadcrumb">
+        <a href="../index.html">Docs</a><span class="breadcrumb-sep">›</span>
+        <a href="index.html">Metrics</a><span class="breadcrumb-sep">›</span>
+        <span>Module Cohesion</span>
+      </div>
+      <div class="page-header">
+        <span class="badge badge-file">Module</span>
+        <h1>Module Cohesion</h1>
+        <p class="tagline">The FP analogue of Tight Class Cohesion — do a module's exports share their dependencies?</p>
+      </div>
+
+      <h2>What it measures</h2>
+      <p>Module Cohesion (MC) measures how related a module's exported functions are to one another. Two exports are <em>connected</em> if they share at least one import source — that is, they both use identifiers that come from the same <code>import</code> statement.</p>
+      <p>A module with MC = 1.0 has high cohesion: all its exports work with the same dependencies. A module with MC = 0.0 is a grab-bag of unrelated functions that happen to live in the same file.</p>
+
+      <h2>How it's computed</h2>
+      <div class="formula">
+MC = connected_export_pairs / total_possible_pairs
+
+<span class="comment">connected_export_pairs = pairs of exports sharing ≥1 import source
+total_possible_pairs   = N × (N-1) / 2  where N = number of exports
+
+Special cases: 0 or 1 export → MC = 1.0 (vacuously cohesive)</span>
+      </div>
+
+      <h2>Examples</h2>
+      <div class="code-block">
+        <div class="code-block-header">TypeScript — MC = 1.0 (cohesive)</div>
+        <pre><span class="kw">import</span> { logger } <span class="kw">from</span> <span class="str">'./logger'</span>;
+
+<span class="kw">export function</span> <span class="fn">greet</span>(name: <span class="ty">string</span>) {
+  logger.info(<span class="str">`Hello ${name}`</span>);
+}
+<span class="kw">export function</span> <span class="fn">farewell</span>(name: <span class="ty">string</span>) {
+  logger.info(<span class="str">`Goodbye ${name}`</span>);
+}
+<span class="cmt">// Both use logger → connected → MC = 1.0</span></pre>
+      </div>
+
+      <div class="code-block">
+        <div class="code-block-header">TypeScript — MC = 0.0 (should be split)</div>
+        <pre><span class="kw">import</span> { db } <span class="kw">from</span> <span class="str">'./database'</span>;
+<span class="kw">import</span> { email } <span class="kw">from</span> <span class="str">'./email'</span>;
+
+<span class="kw">export function</span> <span class="fn">processOrder</span>(id: <span class="ty">number</span>) { db.query(id); }
+<span class="kw">export function</span> <span class="fn">formatEmail</span>(to: <span class="ty">string</span>) { email.format(to); }
+<span class="cmt">// No shared imports → MC = 0.0 → split into two modules</span></pre>
+      </div>
+
+      <div class="note">
+        <strong>Note:</strong> Barrel files (<code>export { foo } from './foo'</code>) have no bodies to scan and are counted as vacuously cohesive (MC = 1.0).
+      </div>
+
+      <div class="page-nav">
+        <a href="render-complexity.html" class="prev">
+          <span class="nav-dir">← Previous</span><span class="nav-title">Render Complexity</span>
+        </a>
+        <a href="function-coupling.html" class="next">
+          <span class="nav-dir">Next</span><span class="nav-title">Function Coupling →</span>
+        </a>
+      </div>
+      <a href="https://github.com/gabrielrf97/tsm/edit/main/docs/metrics/module-cohesion.html" class="edit-link">Edit on GitHub</a>
+    </main>
+  </div>
+</body>
+</html>

@@ -4,11 +4,16 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Output Formats — TSM Docs</title>
+  <meta name="description" content="TSM supports four output formats: table, JSON, CSV, and self-contained HTML. Learn what each section of the output means.">
+  <meta property="og:title" content="Output Formats — TSM">
+  <meta property="og:description" content="TSM supports four output formats: table, JSON, CSV, and HTML.">
+  <meta property="og:type" content="website">
+  <meta property="og:url" content="https://gabrielrf97.github.io/tsm/output-formats.html">
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
   <div class="layout">
-    
+
     <aside class="sidebar">
       <div class="sidebar-header">
         <a href="index.html" class="logo">TSM</a>
@@ -26,9 +31,13 @@
         <div class="nav-section">
           <div class="nav-section-title">Metrics</div>
           <a href="metrics/index.html">Overview</a>
+          <div class="nav-group-label">Function</div>
           <a href="metrics/cyclomatic.html">Cyclomatic Complexity</a>
           <a href="metrics/halstead.html">Halstead Volume</a>
           <a href="metrics/maintainability.html">Maintainability Index</a>
+          <a href="metrics/closure-depth.html">Closure Depth</a>
+          <a href="metrics/long-param-list.html">Long Parameter List</a>
+          <div class="nav-group-label">Class</div>
           <a href="metrics/wmc.html">WMC</a>
           <a href="metrics/dit.html">DIT</a>
           <a href="metrics/nom.html">NOM / NOAM / NOOM</a>
@@ -37,8 +46,20 @@
           <a href="metrics/cbo.html">CBO</a>
           <a href="metrics/rfc.html">RFC</a>
           <a href="metrics/noi.html">NOI</a>
+          <div class="nav-group-label">React / FP</div>
           <a href="metrics/used-components.html">Used Components</a>
           <a href="metrics/jsx-nesting.html">JSX Nesting</a>
+          <a href="metrics/hook-complexity.html">Hook Complexity</a>
+          <a href="metrics/hook-cohesion.html">Hook Cohesion</a>
+          <a href="metrics/effect-density.html">Effect Density</a>
+          <a href="metrics/component-responsibility.html">Component Responsibility</a>
+          <a href="metrics/prop-drilling.html">Prop Drilling</a>
+          <a href="metrics/render-complexity.html">Render Complexity</a>
+          <div class="nav-group-label">Module</div>
+          <a href="metrics/module-cohesion.html">Module Cohesion</a>
+          <a href="metrics/function-coupling.html">Function Coupling</a>
+          <a href="metrics/pure-function-ratio.html">Pure Function Ratio</a>
+          <div class="nav-group-label">File</div>
           <a href="metrics/technical-debt.html">Technical Debt</a>
         </div>
         <div class="nav-section">
@@ -51,6 +72,7 @@
         </div>
       </nav>
     </aside>
+
     <main class="content">
 
       <div class="breadcrumb">
@@ -62,50 +84,91 @@
         <p class="tagline">TSM supports four output formats: <code>table</code>, <code>json</code>, <code>csv</code>, and <code>html</code>.</p>
       </div>
 
-      <h2>Table (default)</h2>
-      <p>A UTF-8 box-drawing table suitable for terminal viewing. Complexity values are color-coded: <span class="sev-ok">green</span> (&lt;5), <span class="sev-warning">yellow</span> (5–9), <span class="sev-error">red</span> (&ge;10).</p>
-      <div class="output-block">Analyzed 2 file(s) — 4 function(s) — 120 LOC total
+      <h2>Output sections</h2>
+      <p>Regardless of format, results are organized into three sections:</p>
+      <ul>
+        <li><strong>Function Metrics</strong> — per-function: CC, LOC, SLOC, nesting depth, param count, Halstead Volume, Maintainability Index, closure depth</li>
+        <li><strong>React / FP Component Metrics</strong> — per-component: hook complexity, hook cohesion, effect density, component responsibility score, prop drilling depth, render complexity</li>
+        <li><strong>File Metrics</strong> — per-file: total LOC/SLOC, function count, technical debt, module cohesion, function coupling (fan-out), pure function ratio</li>
+      </ul>
 
-╒══════════════╤══════════════╤══════╤═════╤══════╤════════════╤═════════╤════════╕
-│ File         │ Function     │ Line │ LOC │ SLOC │ Complexity │ Nesting │ Params │
-╞══════════════╪══════════════╪══════╪═════╪══════╪════════════╪═════════╪════════╡
-│ src/a.ts     │ simple       │   10 │  15 │   12 │          2 │       1 │      1 │
-│ src/b.ts     │ processData  │    5 │  55 │   47 │         11 │       4 │      3 │
-╘══════════════╧══════════════╧══════╧═════╧══════╧════════════╧═════════╧════════╛</div>
+      <h2>Table (default)</h2>
+      <p>UTF-8 box-drawing tables printed to stdout. Cyclomatic Complexity values are color-coded: <span class="sev-ok">green</span> (&lt;5), <span class="sev-warning">yellow</span> (5–9), <span class="sev-error">red</span> (&ge;10).</p>
+
+      <h3>Function Metrics</h3>
+      <div class="output-block">── Function Metrics ─────────────────────────────────────────────────────────
+
+╒══════════════════╤═══════════════╤══════╤═════╤══════╤════════════╤═════════╤════════╕
+│ File             │ Function      │ Line │ LOC │ SLOC │ Complexity │ Nesting │ Params │
+╞══════════════════╪═══════════════╪══════╪═════╪══════╪════════════╪═════════╪════════╡
+│ src/utils.ts     │ parseConfig   │    5 │  18 │   14 │          3 │       2 │      1 │
+│ src/utils.ts     │ validateInput │   24 │  32 │   26 │         11 │       4 │      2 │
+│ src/processor.ts │ processData   │    8 │  55 │   47 │          8 │       3 │      3 │
+╘══════════════════╧═══════════════╧══════╧═════╧══════╧════════════╧═════════╧════════╛</div>
+
+      <h3>React / FP Component Metrics</h3>
+      <div class="output-block">── React / FP Component Metrics ─────────────────────────────────────────────
+
+╒═══════════════════╤═══════════════╤════════════╤══════════════╤════════════════╤══════════════╕
+│ File              │ Component     │ Hook Count │ Effect Dens. │ Resp. Score    │ Render Cmplx │
+╞═══════════════════╪═══════════════╪════════════╪══════════════╪════════════════╪══════════════╡
+│ src/UserCard.tsx  │ UserCard      │          3 │         0.05 │           12.5 │            3 │
+│ src/Dashboard.tsx │ Dashboard     │          7 │         0.12 │           24.0 │            8 │
+╘═══════════════════╧═══════════════╧════════════╧══════════════╧════════════════╧══════════════╛</div>
+
+      <h3>File Metrics</h3>
+      <div class="output-block">── File Metrics ──────────────────────────────────────────────────────────────
+
+╒═══════════════════╤═════╤══════╤═══════════╤══════════╤═══════════╤═════════╕
+│ File              │ LOC │ SLOC │ Functions │ Tech Debt│ MC        │ Fan-Out │
+╞═══════════════════╪═════╪══════╪═══════════╪══════════╪═══════════╪═════════╡
+│ src/utils.ts      │  60 │   50 │         2 │     12.4 │      0.85 │       3 │
+│ src/processor.ts  │  80 │   68 │         3 │     18.7 │      0.60 │       5 │
+╘═══════════════════╧═════╧══════╧═══════════╧══════════╧═══════════╧═════════╛
+
+Analyzed 2 file(s) — 5 function(s) — 140 LOC total</div>
 
       <h2>JSON</h2>
-      <p>Structured JSON output with the full analysis result, including per-file metrics, per-function metrics, and all threshold violations.</p>
+      <p>Structured JSON with the full analysis result, including per-file metrics, per-function metrics, per-component metrics, and all threshold violations.</p>
       <div class="code-block">
         <div class="code-block-header">json</div>
         <pre>{
   <span class="str">"total_files"</span>: <span class="num">2</span>,
-  <span class="str">"total_functions"</span>: <span class="num">4</span>,
-  <span class="str">"total_loc"</span>: <span class="num">120</span>,
+  <span class="str">"total_functions"</span>: <span class="num">5</span>,
+  <span class="str">"total_loc"</span>: <span class="num">140</span>,
   <span class="str">"files"</span>: [
     {
-      <span class="str">"path"</span>: <span class="str">"src/a.ts"</span>,
+      <span class="str">"path"</span>: <span class="str">"src/utils.ts"</span>,
       <span class="str">"total_loc"</span>: <span class="num">60</span>,
       <span class="str">"total_sloc"</span>: <span class="num">50</span>,
       <span class="str">"function_count"</span>: <span class="num">2</span>,
+      <span class="str">"module_cohesion"</span>: <span class="num">0.85</span>,
+      <span class="str">"fan_out"</span>: <span class="num">3</span>,
+      <span class="str">"pure_function_ratio"</span>: <span class="num">0.5</span>,
+      <span class="str">"technical_debt"</span>: <span class="num">12.4</span>,
       <span class="str">"functions"</span>: [
         {
-          <span class="str">"name"</span>: <span class="str">"processData"</span>,
-          <span class="str">"file"</span>: <span class="str">"src/a.ts"</span>,
-          <span class="str">"line"</span>: <span class="num">5</span>,
-          <span class="str">"loc"</span>: <span class="num">55</span>,
-          <span class="str">"sloc"</span>: <span class="num">47</span>,
+          <span class="str">"name"</span>: <span class="str">"validateInput"</span>,
+          <span class="str">"file"</span>: <span class="str">"src/utils.ts"</span>,
+          <span class="str">"line"</span>: <span class="num">24</span>,
+          <span class="str">"loc"</span>: <span class="num">32</span>,
+          <span class="str">"sloc"</span>: <span class="num">26</span>,
           <span class="str">"cyclomatic_complexity"</span>: <span class="num">11</span>,
           <span class="str">"max_nesting"</span>: <span class="num">4</span>,
-          <span class="str">"param_count"</span>: <span class="num">3</span>
+          <span class="str">"param_count"</span>: <span class="num">2</span>,
+          <span class="str">"halstead_volume"</span>: <span class="num">142.3</span>,
+          <span class="str">"maintainability_index"</span>: <span class="num">58.1</span>,
+          <span class="str">"closure_depth"</span>: <span class="num">1</span>
         }
-      ]
+      ],
+      <span class="str">"components"</span>: []
     }
   ],
   <span class="str">"violations"</span>: [
     {
-      <span class="str">"file"</span>: <span class="str">"src/a.ts"</span>,
-      <span class="str">"entity"</span>: <span class="str">"processData"</span>,
-      <span class="str">"line"</span>: <span class="num">5</span>,
+      <span class="str">"file"</span>: <span class="str">"src/utils.ts"</span>,
+      <span class="str">"entity"</span>: <span class="str">"validateInput"</span>,
+      <span class="str">"line"</span>: <span class="num">24</span>,
       <span class="str">"metric"</span>: <span class="str">"cyclomatic_complexity"</span>,
       <span class="str">"value"</span>: <span class="num">11</span>,
       <span class="str">"threshold"</span>: <span class="num">10</span>,
@@ -116,17 +179,19 @@
       </div>
 
       <h2>CSV</h2>
-      <p>RFC 4180-compliant CSV. Header row followed by one row per function. Fields containing commas or quotes are properly quoted.</p>
-      <div class="output-block">file,function,line,loc,sloc,complexity,nesting,params
-src/a.ts,simple,10,15,12,2,1,1
-src/b.ts,processData,5,55,47,11,4,3</div>
-      <p>Violations are <em>not</em> included in CSV output. Use JSON for the full picture.</p>
+      <p>RFC 4180-compliant CSV. One row per function — suitable for spreadsheet import or further processing.</p>
+      <div class="output-block">file,function,line,loc,sloc,complexity,nesting,params,halstead_volume,maintainability_index,closure_depth
+src/utils.ts,parseConfig,5,18,14,3,2,1,68.4,82.3,1
+src/utils.ts,validateInput,24,32,26,11,4,2,142.3,58.1,1
+src/processor.ts,processData,8,55,47,8,3,3,198.6,64.7,2</div>
+      <p>Violations are <em>not</em> included in CSV output. Use JSON for the full picture including component metrics.</p>
 
       <h2>HTML</h2>
       <p>A self-contained HTML report with inline CSS and JavaScript. Features:</p>
       <ul>
         <li>Sortable columns (click any header)</li>
-        <li>Color-coded complexity badges (green/yellow/red)</li>
+        <li>Color-coded complexity badges (green / yellow / red)</li>
+        <li>Separate tables for function, component, and file metrics</li>
         <li>Violations table (if any thresholds exceeded)</li>
         <li>No external dependencies — single file, works offline</li>
       </ul>

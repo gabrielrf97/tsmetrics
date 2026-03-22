@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Function Coupling — TSM Docs</title>
+  <meta name="description" content="Function Coupling (Fan-Out) counts the distinct import sources a module depends on — a measure of how coupled it is to the rest of the codebase.">
+  <meta property="og:title" content="Function Coupling — TSM">
+  <meta property="og:description" content="Fan-Out: number of distinct import sources per module.">
+  <meta property="og:type" content="website">
+  <meta property="og:url" content="https://gabrielrf97.github.io/tsm/metrics/function-coupling.html">
+  <link rel="stylesheet" href="../style.css">
+</head>
+<body>
+  <div class="layout">
+    <aside class="sidebar">
+      <div class="sidebar-header">
+        <a href="../index.html" class="logo">TSM</a>
+        <p class="sidebar-subtitle">TypeScript Static Analyzer</p>
+      </div>
+      <nav class="sidebar-nav">
+        <div class="nav-section">
+          <div class="nav-section-title">Getting Started</div>
+          <a href="../index.html">Introduction</a>
+          <a href="../getting-started.html">Installation</a>
+          <a href="../configuration.html">Configuration</a>
+          <a href="../cli.html">CLI Reference</a>
+          <a href="../output-formats.html">Output Formats</a>
+        </div>
+        <div class="nav-section">
+          <div class="nav-section-title">Metrics</div>
+          <a href="index.html">Overview</a>
+          <div class="nav-group-label">Function</div>
+          <a href="cyclomatic.html">Cyclomatic Complexity</a>
+          <a href="halstead.html">Halstead Volume</a>
+          <a href="maintainability.html">Maintainability Index</a>
+          <a href="closure-depth.html">Closure Depth</a>
+          <a href="long-param-list.html">Long Parameter List</a>
+          <div class="nav-group-label">Class</div>
+          <a href="wmc.html">WMC</a>
+          <a href="dit.html">DIT</a>
+          <a href="nom.html">NOM / NOAM / NOOM</a>
+          <a href="woc.html">WOC</a>
+          <a href="tcc.html">TCC</a>
+          <a href="cbo.html">CBO</a>
+          <a href="rfc.html">RFC</a>
+          <a href="noi.html">NOI</a>
+          <div class="nav-group-label">React / FP</div>
+          <a href="used-components.html">Used Components</a>
+          <a href="jsx-nesting.html">JSX Nesting</a>
+          <a href="hook-complexity.html">Hook Complexity</a>
+          <a href="hook-cohesion.html">Hook Cohesion</a>
+          <a href="effect-density.html">Effect Density</a>
+          <a href="component-responsibility.html">Component Responsibility</a>
+          <a href="prop-drilling.html">Prop Drilling</a>
+          <a href="render-complexity.html">Render Complexity</a>
+          <div class="nav-group-label">Module</div>
+          <a href="module-cohesion.html">Module Cohesion</a>
+          <a href="function-coupling.html" class="active">Function Coupling</a>
+          <a href="pure-function-ratio.html">Pure Function Ratio</a>
+          <div class="nav-group-label">File</div>
+          <a href="technical-debt.html">Technical Debt</a>
+        </div>
+        <div class="nav-section">
+          <div class="nav-section-title">Strategies</div>
+          <a href="../strategies/index.html">Overview</a>
+          <a href="../strategies/god-class.html">God Class</a>
+          <a href="../strategies/brain-method.html">Brain Method</a>
+          <a href="../strategies/feature-envy.html">Feature Envy</a>
+          <a href="../strategies/refused-bequest.html">Refused Bequest</a>
+        </div>
+      </nav>
+    </aside>
+    <main class="content">
+      <div class="breadcrumb">
+        <a href="../index.html">Docs</a><span class="breadcrumb-sep">›</span>
+        <a href="index.html">Metrics</a><span class="breadcrumb-sep">›</span>
+        <span>Function Coupling</span>
+      </div>
+      <div class="page-header">
+        <span class="badge badge-file">Module</span>
+        <h1>Function Coupling</h1>
+        <p class="tagline">Fan-Out: how many distinct modules does this file depend on?</p>
+      </div>
+
+      <h2>What it measures</h2>
+      <p>Function Coupling measures the <em>fan-out</em> of a module — the number of distinct import sources it depends on. A high fan-out means the module has many external dependencies, making it harder to change, test in isolation, and understand.</p>
+      <p>TSM classifies imports into three categories:</p>
+      <ul>
+        <li><strong>Relative</strong> — paths starting with <code>./</code> or <code>../</code> (intra-project)</li>
+        <li><strong>Package</strong> — npm packages, Node built-ins, or path aliases</li>
+        <li><strong>Type-only</strong> — <code>import type { … }</code> imports (erased at runtime)</li>
+      </ul>
+
+      <h2>How it's computed</h2>
+      <div class="formula">
+Fan-Out = |distinct import sources|
+
+<span class="comment">Multiple imports from the same source count as 1.
+Dynamic imports and re-exports are not counted.
+If a source appears in both value and type-only imports,
+it is classified as a value (runtime) dependency.</span>
+      </div>
+
+      <h2>Example</h2>
+      <div class="code-block">
+        <div class="code-block-header">TypeScript — fan-out: 4</div>
+        <pre><span class="kw">import</span> { useState } <span class="kw">from</span> <span class="str">'react'</span>;           <span class="cmt">// package</span>
+<span class="kw">import</span> { db } <span class="kw">from</span> <span class="str">'./database'</span>;             <span class="cmt">// relative</span>
+<span class="kw">import</span> { logger } <span class="kw">from</span> <span class="str">'./logger'</span>;           <span class="cmt">// relative</span>
+<span class="kw">import</span> { db } <span class="kw">from</span> <span class="str">'./database'</span>;             <span class="cmt">// duplicate → still 1</span>
+<span class="kw">import type</span> { User } <span class="kw">from</span> <span class="str">'./types'</span>;         <span class="cmt">// type-only</span>
+<span class="cmt">// distinct sources: react, ./database, ./logger, ./types = 4</span></pre>
+      </div>
+
+      <div class="tip">
+        <strong>Tip:</strong> A fan-out above 10 is a warning sign. Consider whether the module is doing too much, or whether some imports could be consolidated via a shared utility layer.
+      </div>
+
+      <div class="page-nav">
+        <a href="module-cohesion.html" class="prev">
+          <span class="nav-dir">← Previous</span><span class="nav-title">Module Cohesion</span>
+        </a>
+        <a href="pure-function-ratio.html" class="next">
+          <span class="nav-dir">Next</span><span class="nav-title">Pure Function Ratio →</span>
+        </a>
+      </div>
+      <a href="https://github.com/gabrielrf97/tsm/edit/main/docs/metrics/function-coupling.html" class="edit-link">Edit on GitHub</a>
+    </main>
+  </div>
+</body>
+</html>

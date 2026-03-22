@@ -3,12 +3,17 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Introduction — TSM Docs</title>
+  <title>TSM — TypeScript Static Analyzer</title>
+  <meta name="description" content="TSM is a fast, tree-sitter-powered TypeScript static analyzer written in Rust. Compute 25+ metrics across functions, classes, React components, and modules.">
+  <meta property="og:title" content="TSM — TypeScript Static Analyzer">
+  <meta property="og:description" content="Fast, tree-sitter-powered TypeScript static analyzer. 25+ metrics, React/FP support, design smell detection.">
+  <meta property="og:type" content="website">
+  <meta property="og:url" content="https://gabrielrf97.github.io/tsm/">
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
   <div class="layout">
-    
+
     <aside class="sidebar">
       <div class="sidebar-header">
         <a href="index.html" class="logo">TSM</a>
@@ -26,9 +31,13 @@
         <div class="nav-section">
           <div class="nav-section-title">Metrics</div>
           <a href="metrics/index.html">Overview</a>
+          <div class="nav-group-label">Function</div>
           <a href="metrics/cyclomatic.html">Cyclomatic Complexity</a>
           <a href="metrics/halstead.html">Halstead Volume</a>
           <a href="metrics/maintainability.html">Maintainability Index</a>
+          <a href="metrics/closure-depth.html">Closure Depth</a>
+          <a href="metrics/long-param-list.html">Long Parameter List</a>
+          <div class="nav-group-label">Class</div>
           <a href="metrics/wmc.html">WMC</a>
           <a href="metrics/dit.html">DIT</a>
           <a href="metrics/nom.html">NOM / NOAM / NOOM</a>
@@ -37,8 +46,20 @@
           <a href="metrics/cbo.html">CBO</a>
           <a href="metrics/rfc.html">RFC</a>
           <a href="metrics/noi.html">NOI</a>
+          <div class="nav-group-label">React / FP</div>
           <a href="metrics/used-components.html">Used Components</a>
           <a href="metrics/jsx-nesting.html">JSX Nesting</a>
+          <a href="metrics/hook-complexity.html">Hook Complexity</a>
+          <a href="metrics/hook-cohesion.html">Hook Cohesion</a>
+          <a href="metrics/effect-density.html">Effect Density</a>
+          <a href="metrics/component-responsibility.html">Component Responsibility</a>
+          <a href="metrics/prop-drilling.html">Prop Drilling</a>
+          <a href="metrics/render-complexity.html">Render Complexity</a>
+          <div class="nav-group-label">Module</div>
+          <a href="metrics/module-cohesion.html">Module Cohesion</a>
+          <a href="metrics/function-coupling.html">Function Coupling</a>
+          <a href="metrics/pure-function-ratio.html">Pure Function Ratio</a>
+          <div class="nav-group-label">File</div>
           <a href="metrics/technical-debt.html">Technical Debt</a>
         </div>
         <div class="nav-section">
@@ -51,11 +72,12 @@
         </div>
       </nav>
     </aside>
+
     <main class="content">
 
       <div class="hero">
         <h1>TSM</h1>
-        <p class="tagline">A fast, tree-sitter-powered TypeScript static analyzer written in Rust. Compute 14+ metrics across functions, classes, files, and React components.</p>
+        <p class="tagline">A fast, tree-sitter-powered TypeScript static analyzer written in Rust. Point it at your codebase and get 25+ actionable metrics in seconds.</p>
         <div class="hero-badges">
           <span class="hero-badge">Rust</span>
           <span class="hero-badge">TypeScript / TSX</span>
@@ -69,14 +91,25 @@
         </div>
       </div>
 
+      <h2>Quick Start</h2>
+      <div class="quick-install">
+        <span class="prompt"># 1. Install</span><br>
+        git clone https://github.com/gabrielrf97/tsm &amp;&amp; cd tsm &amp;&amp; cargo install --path .<br><br>
+        <span class="prompt"># 2. Run</span><br>
+        ts-static-analyzer analyze ./src<br><br>
+        <span class="prompt"># 3. Export a report</span><br>
+        ts-static-analyzer analyze ./src --format html &gt; report.html
+      </div>
+
       <h2>What is TSM?</h2>
-      <p>TSM (<em>TypeScript Static Analyzer</em>) is a command-line tool that parses TypeScript and TSX files using <strong>tree-sitter</strong> and computes a comprehensive set of software quality metrics. It is written in Rust and designed for speed, correctness, and scriptability.</p>
-      <p>TSM computes metrics at three levels:</p>
+      <p>TSM (<em>TypeScript Static Analyzer</em>) parses TypeScript and TSX files using <strong>tree-sitter</strong> and computes a comprehensive set of software quality metrics. It is written in Rust and designed for speed, correctness, and scriptability.</p>
+      <p>Metrics are grouped into five categories:</p>
       <ul>
-        <li><strong>Function-level</strong> — Cyclomatic Complexity, Halstead Volume, Maintainability Index, LOC, nesting depth, parameter count</li>
+        <li><strong>Function-level</strong> — Cyclomatic Complexity, Halstead Volume, Maintainability Index, LOC, nesting depth, closure depth, parameter count</li>
         <li><strong>Class-level</strong> — WMC, DIT, NOM/NOAM/NOOM, WOC, TCC, CBO, RFC, NOI</li>
-        <li><strong>File-level</strong> — Technical Debt, SLOC</li>
-        <li><strong>React</strong> — JSX nesting depth, number of used components (NUC)</li>
+        <li><strong>React / FP</strong> — Hook Complexity, Custom Hook Cohesion, Effect Density, Component Responsibility, Prop Drilling Depth, Render Complexity, JSX Nesting, Used Components</li>
+        <li><strong>Module-level</strong> — Module Cohesion, Function Coupling (Fan-Out), Pure Function Ratio</li>
+        <li><strong>File-level</strong> — Technical Debt score</li>
       </ul>
       <p>It also detects four <strong>object-oriented design smells</strong> inspired by <em>Object-Oriented Metrics in Practice</em> (Lanza &amp; Marinescu): God Class, Brain Method, Feature Envy, and Refused Bequest.</p>
 
@@ -90,28 +123,18 @@
         <div class="feature-card">
           <div class="fc-icon">🎯</div>
           <h3>Accurate</h3>
-          <p>Built on tree-sitter's full AST—no regex heuristics. Handles generics, decorators, and TSX.</p>
+          <p>Built on tree-sitter's full AST — no regex heuristics. Handles generics, decorators, and TSX.</p>
         </div>
         <div class="feature-card">
           <div class="fc-icon">⚙️</div>
           <h3>Configurable</h3>
-          <p>Override warning/error thresholds per metric in a <code>tsm.yaml</code> config file.</p>
+          <p>Override warning/error thresholds per metric via <code>tsm.yaml</code>. Exclude paths you don't care about.</p>
         </div>
         <div class="feature-card">
           <div class="fc-icon">📤</div>
           <h3>Multiple Outputs</h3>
           <p>Table, JSON, CSV, and self-contained HTML report formats.</p>
         </div>
-      </div>
-
-      <h2>Quick Start</h2>
-      <div class="quick-install">
-        <span class="prompt"># Install from source</span><br>
-        cargo install --path .<br><br>
-        <span class="prompt"># Analyze a directory</span><br>
-        ts-static-analyzer analyze ./src<br><br>
-        <span class="prompt"># JSON output</span><br>
-        ts-static-analyzer analyze ./src --format json
       </div>
 
       <div class="page-nav">

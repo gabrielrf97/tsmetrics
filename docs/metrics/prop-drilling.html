@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Prop Drilling Depth — TSM Docs</title>
+  <meta name="description" content="Prop Drilling Depth measures how deep props are passed down through JSX — a proxy for data flow complexity.">
+  <meta property="og:title" content="Prop Drilling Depth — TSM">
+  <meta property="og:description" content="Measures how deep props are passed down through nested JSX.">
+  <meta property="og:type" content="website">
+  <meta property="og:url" content="https://gabrielrf97.github.io/tsm/metrics/prop-drilling.html">
+  <link rel="stylesheet" href="../style.css">
+</head>
+<body>
+  <div class="layout">
+    <aside class="sidebar">
+      <div class="sidebar-header">
+        <a href="../index.html" class="logo">TSM</a>
+        <p class="sidebar-subtitle">TypeScript Static Analyzer</p>
+      </div>
+      <nav class="sidebar-nav">
+        <div class="nav-section">
+          <div class="nav-section-title">Getting Started</div>
+          <a href="../index.html">Introduction</a>
+          <a href="../getting-started.html">Installation</a>
+          <a href="../configuration.html">Configuration</a>
+          <a href="../cli.html">CLI Reference</a>
+          <a href="../output-formats.html">Output Formats</a>
+        </div>
+        <div class="nav-section">
+          <div class="nav-section-title">Metrics</div>
+          <a href="index.html">Overview</a>
+          <div class="nav-group-label">Function</div>
+          <a href="cyclomatic.html">Cyclomatic Complexity</a>
+          <a href="halstead.html">Halstead Volume</a>
+          <a href="maintainability.html">Maintainability Index</a>
+          <a href="closure-depth.html">Closure Depth</a>
+          <a href="long-param-list.html">Long Parameter List</a>
+          <div class="nav-group-label">Class</div>
+          <a href="wmc.html">WMC</a>
+          <a href="dit.html">DIT</a>
+          <a href="nom.html">NOM / NOAM / NOOM</a>
+          <a href="woc.html">WOC</a>
+          <a href="tcc.html">TCC</a>
+          <a href="cbo.html">CBO</a>
+          <a href="rfc.html">RFC</a>
+          <a href="noi.html">NOI</a>
+          <div class="nav-group-label">React / FP</div>
+          <a href="used-components.html">Used Components</a>
+          <a href="jsx-nesting.html">JSX Nesting</a>
+          <a href="hook-complexity.html">Hook Complexity</a>
+          <a href="hook-cohesion.html">Hook Cohesion</a>
+          <a href="effect-density.html">Effect Density</a>
+          <a href="component-responsibility.html">Component Responsibility</a>
+          <a href="prop-drilling.html" class="active">Prop Drilling</a>
+          <a href="render-complexity.html">Render Complexity</a>
+          <div class="nav-group-label">Module</div>
+          <a href="module-cohesion.html">Module Cohesion</a>
+          <a href="function-coupling.html">Function Coupling</a>
+          <a href="pure-function-ratio.html">Pure Function Ratio</a>
+          <div class="nav-group-label">File</div>
+          <a href="technical-debt.html">Technical Debt</a>
+        </div>
+        <div class="nav-section">
+          <div class="nav-section-title">Strategies</div>
+          <a href="../strategies/index.html">Overview</a>
+          <a href="../strategies/god-class.html">God Class</a>
+          <a href="../strategies/brain-method.html">Brain Method</a>
+          <a href="../strategies/feature-envy.html">Feature Envy</a>
+          <a href="../strategies/refused-bequest.html">Refused Bequest</a>
+        </div>
+      </nav>
+    </aside>
+    <main class="content">
+      <div class="breadcrumb">
+        <a href="../index.html">Docs</a><span class="breadcrumb-sep">›</span>
+        <a href="index.html">Metrics</a><span class="breadcrumb-sep">›</span>
+        <span>Prop Drilling Depth</span>
+      </div>
+      <div class="page-header">
+        <span class="badge badge-react">React / FP</span>
+        <h1>Prop Drilling Depth</h1>
+        <p class="tagline">How deep are props passed through nested JSX?</p>
+      </div>
+
+      <h2>What it measures</h2>
+      <p>Prop drilling occurs when data is passed through many component layers just to reach a deeply nested child. TSM reports two values:</p>
+      <ul>
+        <li><strong>max_prop_pass_depth</strong> — the maximum JSX nesting depth at which any props are being passed (an upper bound for drilling)</li>
+        <li><strong>has_spread_forwarding</strong> — whether <code>{...props}</code> spread attributes appear (direct evidence of forwarding)</li>
+      </ul>
+
+      <h2>How it's computed</h2>
+      <p>TSM walks the JSX tree, tracking nesting depth. At each JSX element it records the depth at which props (including spread <code>{...props}</code>) are passed. The maximum of these depths is reported.</p>
+
+      <div class="formula">
+max_prop_pass_depth = max(depth at which any JSX element receives props)
+has_spread_forwarding = any {&#8203;...props} spread attribute found
+      </div>
+
+      <div class="note">
+        <strong>Note:</strong> This is a static approximation. TSM cannot trace data flow across file boundaries, so <code>max_prop_pass_depth</code> is an upper bound — the actual drilling chain may be shorter.
+      </div>
+
+      <h2>Example</h2>
+      <div class="code-block">
+        <div class="code-block-header">TypeScript — depth 3, spread forwarding detected</div>
+        <pre><span class="kw">function</span> <span class="fn">Page</span>({ user }) {          <span class="cmt">// depth 0</span>
+  <span class="kw">return</span> (
+    <span class="str">&lt;Layout&gt;</span>                        <span class="cmt">// depth 1</span>
+      <span class="str">&lt;Section user={user}&gt;</span>           <span class="cmt">// depth 2 — prop passed</span>
+        <span class="str">&lt;Profile {...user} /&gt;</span>          <span class="cmt">// depth 3 — spread forward</span>
+      <span class="str">&lt;/Section&gt;</span>
+    <span class="str">&lt;/Layout&gt;</span>
+  );
+}</pre>
+      </div>
+
+      <div class="tip">
+        <strong>Fix:</strong> If <code>max_prop_pass_depth</code> is 3 or more, consider using React Context, a state management library, or component composition to avoid threading props through layers.
+      </div>
+
+      <div class="page-nav">
+        <a href="component-responsibility.html" class="prev">
+          <span class="nav-dir">← Previous</span><span class="nav-title">Component Responsibility</span>
+        </a>
+        <a href="render-complexity.html" class="next">
+          <span class="nav-dir">Next</span><span class="nav-title">Render Complexity →</span>
+        </a>
+      </div>
+      <a href="https://github.com/gabrielrf97/tsm/edit/main/docs/metrics/prop-drilling.html" class="edit-link">Edit on GitHub</a>
+    </main>
+  </div>
+</body>
+</html>

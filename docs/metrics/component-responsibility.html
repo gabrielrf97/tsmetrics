@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Component Responsibility Score — TSM Docs</title>
+  <meta name="description" content="Component Responsibility Score is a weighted metric that detects God Components — React components doing too much.">
+  <meta property="og:title" content="Component Responsibility Score — TSM">
+  <meta property="og:description" content="Weighted score detecting God Components in React codebases.">
+  <meta property="og:type" content="website">
+  <meta property="og:url" content="https://gabrielrf97.github.io/tsm/metrics/component-responsibility.html">
+  <link rel="stylesheet" href="../style.css">
+</head>
+<body>
+  <div class="layout">
+    <aside class="sidebar">
+      <div class="sidebar-header">
+        <a href="../index.html" class="logo">TSM</a>
+        <p class="sidebar-subtitle">TypeScript Static Analyzer</p>
+      </div>
+      <nav class="sidebar-nav">
+        <div class="nav-section">
+          <div class="nav-section-title">Getting Started</div>
+          <a href="../index.html">Introduction</a>
+          <a href="../getting-started.html">Installation</a>
+          <a href="../configuration.html">Configuration</a>
+          <a href="../cli.html">CLI Reference</a>
+          <a href="../output-formats.html">Output Formats</a>
+        </div>
+        <div class="nav-section">
+          <div class="nav-section-title">Metrics</div>
+          <a href="index.html">Overview</a>
+          <div class="nav-group-label">Function</div>
+          <a href="cyclomatic.html">Cyclomatic Complexity</a>
+          <a href="halstead.html">Halstead Volume</a>
+          <a href="maintainability.html">Maintainability Index</a>
+          <a href="closure-depth.html">Closure Depth</a>
+          <a href="long-param-list.html">Long Parameter List</a>
+          <div class="nav-group-label">Class</div>
+          <a href="wmc.html">WMC</a>
+          <a href="dit.html">DIT</a>
+          <a href="nom.html">NOM / NOAM / NOOM</a>
+          <a href="woc.html">WOC</a>
+          <a href="tcc.html">TCC</a>
+          <a href="cbo.html">CBO</a>
+          <a href="rfc.html">RFC</a>
+          <a href="noi.html">NOI</a>
+          <div class="nav-group-label">React / FP</div>
+          <a href="used-components.html">Used Components</a>
+          <a href="jsx-nesting.html">JSX Nesting</a>
+          <a href="hook-complexity.html">Hook Complexity</a>
+          <a href="hook-cohesion.html">Hook Cohesion</a>
+          <a href="effect-density.html">Effect Density</a>
+          <a href="component-responsibility.html" class="active">Component Responsibility</a>
+          <a href="prop-drilling.html">Prop Drilling</a>
+          <a href="render-complexity.html">Render Complexity</a>
+          <div class="nav-group-label">Module</div>
+          <a href="module-cohesion.html">Module Cohesion</a>
+          <a href="function-coupling.html">Function Coupling</a>
+          <a href="pure-function-ratio.html">Pure Function Ratio</a>
+          <div class="nav-group-label">File</div>
+          <a href="technical-debt.html">Technical Debt</a>
+        </div>
+        <div class="nav-section">
+          <div class="nav-section-title">Strategies</div>
+          <a href="../strategies/index.html">Overview</a>
+          <a href="../strategies/god-class.html">God Class</a>
+          <a href="../strategies/brain-method.html">Brain Method</a>
+          <a href="../strategies/feature-envy.html">Feature Envy</a>
+          <a href="../strategies/refused-bequest.html">Refused Bequest</a>
+        </div>
+      </nav>
+    </aside>
+    <main class="content">
+      <div class="breadcrumb">
+        <a href="../index.html">Docs</a><span class="breadcrumb-sep">›</span>
+        <a href="index.html">Metrics</a><span class="breadcrumb-sep">›</span>
+        <span>Component Responsibility Score</span>
+      </div>
+      <div class="page-header">
+        <span class="badge badge-react">React / FP</span>
+        <h1>Component Responsibility Score</h1>
+        <p class="tagline">A weighted score that detects God Components doing too much.</p>
+      </div>
+
+      <h2>What it measures</h2>
+      <p>The Component Responsibility Score (CRS) is the React equivalent of the <a href="../strategies/god-class.html">God Class</a> detection strategy. It combines four signals into a single score to identify components that have accumulated too many responsibilities.</p>
+
+      <h2>How it's computed</h2>
+      <div class="formula">
+CRS = (props × 1.0) + (state × 2.0) + (effects × 3.0) + (jsx_elements × 0.5)
+
+<span class="comment">props         = number of component parameters (props)
+state         = useState + useReducer calls at component scope
+effects       = useEffect + useLayoutEffect + useInsertionEffect calls
+jsx_elements  = total JSX elements and fragments in the component</span>
+      </div>
+
+      <table class="threshold-table">
+        <thead><tr><th>Signal</th><th>Weight</th><th>Why higher?</th></tr></thead>
+        <tbody>
+          <tr><td>Props</td><td>1.0×</td><td>More props = more external dependencies</td></tr>
+          <tr><td>State (useState/useReducer)</td><td>2.0×</td><td>State is internal complexity</td></tr>
+          <tr><td>Effects</td><td>3.0×</td><td>Effects are the most complex — async, cleanup, ordering</td></tr>
+          <tr><td>JSX elements</td><td>0.5×</td><td>Render size, weighted lower to avoid penalizing presentational components</td></tr>
+        </tbody>
+      </table>
+
+      <h2>Interpretation</h2>
+      <table class="threshold-table">
+        <thead><tr><th>Score</th><th>Assessment</th></tr></thead>
+        <tbody>
+          <tr><td>&lt; 10</td><td><span class="sev-ok">Focused</span> — single responsibility</td></tr>
+          <tr><td>10 – 20</td><td><span class="sev-warning">Moderate</span> — review for opportunities to extract hooks or sub-components</td></tr>
+          <tr><td>&gt; 20</td><td><span class="sev-error">God Component</span> — strong candidate for splitting</td></tr>
+        </tbody>
+      </table>
+
+      <h2>Example</h2>
+      <div class="code-block">
+        <div class="code-block-header">TypeScript — CRS ≈ 26 (God Component)</div>
+        <pre><span class="kw">function</span> <span class="fn">Dashboard</span>({ userId, theme, onLogout, onRefresh }) { <span class="cmt">// 4 props → 4.0</span>
+  <span class="kw">const</span> [data, setData] = <span class="fn">useState</span>([]);   <span class="cmt">// state → 2.0</span>
+  <span class="kw">const</span> [loading, setLoading] = <span class="fn">useState</span>(<span class="kw">true</span>); <span class="cmt">// state → 2.0</span>
+  <span class="kw">const</span> [error, setError] = <span class="fn">useState</span>(<span class="kw">null</span>); <span class="cmt">// state → 2.0</span>
+  <span class="fn">useEffect</span>(() => { <span class="cmt">/* fetch */</span> }, [userId]); <span class="cmt">// effect → 3.0</span>
+  <span class="fn">useEffect</span>(() => { <span class="cmt">/* analytics */</span> }, []);  <span class="cmt">// effect → 3.0</span>
+  <span class="kw">return</span> (
+    <span class="str">&lt;div&gt;&lt;Header /&gt;&lt;Sidebar /&gt;&lt;Chart /&gt;&lt;Table /&gt;&lt;Footer /&gt;&lt;/div&gt;</span>
+    <span class="cmt">// 6 JSX elements → 3.0</span>
+  );
+  <span class="cmt">// Total CRS ≈ 4 + 6 + 6 + 3 = 19 + jsx overhead → ~26</span>
+}</pre>
+      </div>
+
+      <div class="page-nav">
+        <a href="effect-density.html" class="prev">
+          <span class="nav-dir">← Previous</span><span class="nav-title">Effect Density</span>
+        </a>
+        <a href="prop-drilling.html" class="next">
+          <span class="nav-dir">Next</span><span class="nav-title">Prop Drilling →</span>
+        </a>
+      </div>
+      <a href="https://github.com/gabrielrf97/tsm/edit/main/docs/metrics/component-responsibility.html" class="edit-link">Edit on GitHub</a>
+    </main>
+  </div>
+</body>
+</html>

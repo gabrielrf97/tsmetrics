@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Long Parameter List — TSM Docs</title>
+  <meta name="description" content="Long Parameter List flags functions with more than 4 parameters — a common sign that a function is doing too much.">
+  <meta property="og:title" content="Long Parameter List — TSM">
+  <meta property="og:description" content="Flags functions with more than 4 parameters.">
+  <meta property="og:type" content="website">
+  <meta property="og:url" content="https://gabrielrf97.github.io/tsm/metrics/long-param-list.html">
+  <link rel="stylesheet" href="../style.css">
+</head>
+<body>
+  <div class="layout">
+    <aside class="sidebar">
+      <div class="sidebar-header">
+        <a href="../index.html" class="logo">TSM</a>
+        <p class="sidebar-subtitle">TypeScript Static Analyzer</p>
+      </div>
+      <nav class="sidebar-nav">
+        <div class="nav-section">
+          <div class="nav-section-title">Getting Started</div>
+          <a href="../index.html">Introduction</a>
+          <a href="../getting-started.html">Installation</a>
+          <a href="../configuration.html">Configuration</a>
+          <a href="../cli.html">CLI Reference</a>
+          <a href="../output-formats.html">Output Formats</a>
+        </div>
+        <div class="nav-section">
+          <div class="nav-section-title">Metrics</div>
+          <a href="index.html">Overview</a>
+          <div class="nav-group-label">Function</div>
+          <a href="cyclomatic.html">Cyclomatic Complexity</a>
+          <a href="halstead.html">Halstead Volume</a>
+          <a href="maintainability.html">Maintainability Index</a>
+          <a href="closure-depth.html">Closure Depth</a>
+          <a href="long-param-list.html" class="active">Long Parameter List</a>
+          <div class="nav-group-label">Class</div>
+          <a href="wmc.html">WMC</a>
+          <a href="dit.html">DIT</a>
+          <a href="nom.html">NOM / NOAM / NOOM</a>
+          <a href="woc.html">WOC</a>
+          <a href="tcc.html">TCC</a>
+          <a href="cbo.html">CBO</a>
+          <a href="rfc.html">RFC</a>
+          <a href="noi.html">NOI</a>
+          <div class="nav-group-label">React / FP</div>
+          <a href="used-components.html">Used Components</a>
+          <a href="jsx-nesting.html">JSX Nesting</a>
+          <a href="hook-complexity.html">Hook Complexity</a>
+          <a href="hook-cohesion.html">Hook Cohesion</a>
+          <a href="effect-density.html">Effect Density</a>
+          <a href="component-responsibility.html">Component Responsibility</a>
+          <a href="prop-drilling.html">Prop Drilling</a>
+          <a href="render-complexity.html">Render Complexity</a>
+          <div class="nav-group-label">Module</div>
+          <a href="module-cohesion.html">Module Cohesion</a>
+          <a href="function-coupling.html">Function Coupling</a>
+          <a href="pure-function-ratio.html">Pure Function Ratio</a>
+          <div class="nav-group-label">File</div>
+          <a href="technical-debt.html">Technical Debt</a>
+        </div>
+        <div class="nav-section">
+          <div class="nav-section-title">Strategies</div>
+          <a href="../strategies/index.html">Overview</a>
+          <a href="../strategies/god-class.html">God Class</a>
+          <a href="../strategies/brain-method.html">Brain Method</a>
+          <a href="../strategies/feature-envy.html">Feature Envy</a>
+          <a href="../strategies/refused-bequest.html">Refused Bequest</a>
+        </div>
+      </nav>
+    </aside>
+    <main class="content">
+      <div class="breadcrumb">
+        <a href="../index.html">Docs</a><span class="breadcrumb-sep">›</span>
+        <a href="index.html">Metrics</a><span class="breadcrumb-sep">›</span>
+        <span>Long Parameter List</span>
+      </div>
+      <div class="page-header">
+        <span class="badge badge-function">Function</span>
+        <h1>Long Parameter List</h1>
+        <p class="tagline">Flags functions with more than 4 parameters.</p>
+      </div>
+
+      <h2>What it measures</h2>
+      <p>A <em>Long Parameter List</em> is a classic code smell from Fowler's <em>Refactoring</em>: functions with many parameters are harder to call correctly, harder to test, and often a sign that the function is doing too much or that related data should be grouped into an object.</p>
+      <p>TSM reports the parameter count for every function and flags those exceeding the threshold (default: 4).</p>
+
+      <h2>How it's computed</h2>
+      <p>TSM counts formal parameters in the function signature. Destructured object parameters count as <strong>one</strong> parameter regardless of how many properties are destructured.</p>
+
+      <div class="formula">
+is_long = param_count &gt; threshold   <span class="comment">(default threshold: 4)</span>
+      </div>
+
+      <h2>Examples</h2>
+      <div class="code-block">
+        <div class="code-block-header">TypeScript — 5 params (flagged)</div>
+        <pre><span class="kw">function</span> <span class="fn">createUser</span>(
+  name: <span class="ty">string</span>,
+  email: <span class="ty">string</span>,
+  age: <span class="ty">number</span>,
+  role: <span class="ty">string</span>,
+  active: <span class="ty">boolean</span>   <span class="cmt">// 5 params → flagged</span>
+) { <span class="cmt">/* … */</span> }</pre>
+      </div>
+
+      <div class="code-block">
+        <div class="code-block-header">TypeScript — refactored with object param (1 param)</div>
+        <pre><span class="kw">interface</span> <span class="ty">CreateUserOptions</span> {
+  name: <span class="ty">string</span>; email: <span class="ty">string</span>; age: <span class="ty">number</span>;
+  role: <span class="ty">string</span>; active: <span class="ty">boolean</span>;
+}
+
+<span class="kw">function</span> <span class="fn">createUser</span>(opts: <span class="ty">CreateUserOptions</span>) { <span class="cmt">/* … */</span> }</pre>
+      </div>
+
+      <div class="tip">
+        <strong>Fix:</strong> Group related parameters into a config object or interface. This also makes call sites self-documenting.
+      </div>
+
+      <h2>Configuration</h2>
+      <p>Override the threshold in <code>tsm.yaml</code>:</p>
+      <div class="config-block">thresholds:
+  params:
+    warning: 4   # flag at 4+
+    error: 7     # error at 7+</div>
+
+      <div class="page-nav">
+        <a href="closure-depth.html" class="prev">
+          <span class="nav-dir">← Previous</span><span class="nav-title">Closure Depth</span>
+        </a>
+        <a href="wmc.html" class="next">
+          <span class="nav-dir">Next</span><span class="nav-title">WMC →</span>
+        </a>
+      </div>
+      <a href="https://github.com/gabrielrf97/tsm/edit/main/docs/metrics/long-param-list.html" class="edit-link">Edit on GitHub</a>
+    </main>
+  </div>
+</body>
+</html>

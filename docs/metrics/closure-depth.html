@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Closure Depth — TSM Docs</title>
+  <meta name="description" content="Closure Depth measures how deeply functions are nested inside other functions — a proxy for callback hell.">
+  <meta property="og:title" content="Closure Depth — TSM">
+  <meta property="og:description" content="Measures maximum function nesting depth — detects callback hell.">
+  <meta property="og:type" content="website">
+  <meta property="og:url" content="https://gabrielrf97.github.io/tsm/metrics/closure-depth.html">
+  <link rel="stylesheet" href="../style.css">
+</head>
+<body>
+  <div class="layout">
+    <aside class="sidebar">
+      <div class="sidebar-header">
+        <a href="../index.html" class="logo">TSM</a>
+        <p class="sidebar-subtitle">TypeScript Static Analyzer</p>
+      </div>
+      <nav class="sidebar-nav">
+        <div class="nav-section">
+          <div class="nav-section-title">Getting Started</div>
+          <a href="../index.html">Introduction</a>
+          <a href="../getting-started.html">Installation</a>
+          <a href="../configuration.html">Configuration</a>
+          <a href="../cli.html">CLI Reference</a>
+          <a href="../output-formats.html">Output Formats</a>
+        </div>
+        <div class="nav-section">
+          <div class="nav-section-title">Metrics</div>
+          <a href="index.html">Overview</a>
+          <div class="nav-group-label">Function</div>
+          <a href="cyclomatic.html">Cyclomatic Complexity</a>
+          <a href="halstead.html">Halstead Volume</a>
+          <a href="maintainability.html">Maintainability Index</a>
+          <a href="closure-depth.html" class="active">Closure Depth</a>
+          <a href="long-param-list.html">Long Parameter List</a>
+          <div class="nav-group-label">Class</div>
+          <a href="wmc.html">WMC</a>
+          <a href="dit.html">DIT</a>
+          <a href="nom.html">NOM / NOAM / NOOM</a>
+          <a href="woc.html">WOC</a>
+          <a href="tcc.html">TCC</a>
+          <a href="cbo.html">CBO</a>
+          <a href="rfc.html">RFC</a>
+          <a href="noi.html">NOI</a>
+          <div class="nav-group-label">React / FP</div>
+          <a href="used-components.html">Used Components</a>
+          <a href="jsx-nesting.html">JSX Nesting</a>
+          <a href="hook-complexity.html">Hook Complexity</a>
+          <a href="hook-cohesion.html">Hook Cohesion</a>
+          <a href="effect-density.html">Effect Density</a>
+          <a href="component-responsibility.html">Component Responsibility</a>
+          <a href="prop-drilling.html">Prop Drilling</a>
+          <a href="render-complexity.html">Render Complexity</a>
+          <div class="nav-group-label">Module</div>
+          <a href="module-cohesion.html">Module Cohesion</a>
+          <a href="function-coupling.html">Function Coupling</a>
+          <a href="pure-function-ratio.html">Pure Function Ratio</a>
+          <div class="nav-group-label">File</div>
+          <a href="technical-debt.html">Technical Debt</a>
+        </div>
+        <div class="nav-section">
+          <div class="nav-section-title">Strategies</div>
+          <a href="../strategies/index.html">Overview</a>
+          <a href="../strategies/god-class.html">God Class</a>
+          <a href="../strategies/brain-method.html">Brain Method</a>
+          <a href="../strategies/feature-envy.html">Feature Envy</a>
+          <a href="../strategies/refused-bequest.html">Refused Bequest</a>
+        </div>
+      </nav>
+    </aside>
+    <main class="content">
+      <div class="breadcrumb">
+        <a href="../index.html">Docs</a><span class="breadcrumb-sep">›</span>
+        <a href="index.html">Metrics</a><span class="breadcrumb-sep">›</span>
+        <span>Closure Depth</span>
+      </div>
+      <div class="page-header">
+        <span class="badge badge-function">Function</span>
+        <h1>Closure Depth</h1>
+        <p class="tagline">Maximum function nesting depth — a proxy for callback hell.</p>
+      </div>
+
+      <h2>What it measures</h2>
+      <p>Closure Depth counts how many function scopes are nested inside one another, starting from 1 for the outermost function. A standalone function has depth 1; a callback inside it has depth 2; a callback inside that has depth 3, and so on.</p>
+      <p>High closure depth is a classic sign of <em>callback hell</em> — deeply nested asynchronous callbacks that are hard to read, test, and reason about.</p>
+
+      <h2>How it's computed</h2>
+      <p>TSM walks the AST and increments a depth counter each time it enters a function node (<code>function_declaration</code>, <code>function_expression</code>, <code>arrow_function</code>, or <code>method_definition</code>). The maximum depth seen in the file is reported.</p>
+
+      <div class="formula">
+depth(node) = 1 + max(depth(child) for child in function_children(node))
+      </div>
+
+      <h2>Examples</h2>
+      <div class="code-block">
+        <div class="code-block-header">TypeScript — depth 1 (clean)</div>
+        <pre><span class="kw">function</span> <span class="fn">fetchUser</span>(id: <span class="ty">string</span>) {
+  <span class="kw">return</span> db.query(id);
+}</pre>
+      </div>
+
+      <div class="code-block">
+        <div class="code-block-header">TypeScript — depth 4 (callback hell)</div>
+        <pre><span class="kw">function</span> <span class="fn">fetchData</span>() {          <span class="cmt">// depth 1</span>
+  doA(<span class="kw">function</span>() {              <span class="cmt">// depth 2</span>
+    doB(<span class="kw">function</span>() {            <span class="cmt">// depth 3</span>
+      doC(() => { <span class="cmt">/* … */</span> });  <span class="cmt">// depth 4</span>
+    });
+  });
+}</pre>
+      </div>
+
+      <div class="tip">
+        <strong>Tip:</strong> Refactor deeply nested callbacks using <code>async/await</code>, named functions, or Promise chaining. Aim for closure depth ≤ 2.
+      </div>
+
+      <h2>Interpretation</h2>
+      <table class="threshold-table">
+        <thead><tr><th>Depth</th><th>Meaning</th></tr></thead>
+        <tbody>
+          <tr><td>1</td><td>Single function — no nesting</td></tr>
+          <tr><td>2</td><td>One level of callbacks — generally fine</td></tr>
+          <tr><td>3</td><td>Starting to get complex — consider refactoring</td></tr>
+          <tr><td>4+</td><td>Callback hell — refactor with async/await or named functions</td></tr>
+        </tbody>
+      </table>
+
+      <div class="page-nav">
+        <a href="maintainability.html" class="prev">
+          <span class="nav-dir">← Previous</span><span class="nav-title">Maintainability Index</span>
+        </a>
+        <a href="long-param-list.html" class="next">
+          <span class="nav-dir">Next</span><span class="nav-title">Long Parameter List →</span>
+        </a>
+      </div>
+      <a href="https://github.com/gabrielrf97/tsm/edit/main/docs/metrics/closure-depth.html" class="edit-link">Edit on GitHub</a>
+    </main>
+  </div>
+</body>
+</html>

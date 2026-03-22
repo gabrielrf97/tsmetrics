@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Hook Complexity — TSM Docs</title>
+  <meta name="description" content="Hook Complexity counts the total and distinct hook calls in a React component — a measure of how much state and side-effect logic it contains.">
+  <meta property="og:title" content="Hook Complexity — TSM">
+  <meta property="og:description" content="Counts total and distinct hook calls per React component.">
+  <meta property="og:type" content="website">
+  <meta property="og:url" content="https://gabrielrf97.github.io/tsm/metrics/hook-complexity.html">
+  <link rel="stylesheet" href="../style.css">
+</head>
+<body>
+  <div class="layout">
+    <aside class="sidebar">
+      <div class="sidebar-header">
+        <a href="../index.html" class="logo">TSM</a>
+        <p class="sidebar-subtitle">TypeScript Static Analyzer</p>
+      </div>
+      <nav class="sidebar-nav">
+        <div class="nav-section">
+          <div class="nav-section-title">Getting Started</div>
+          <a href="../index.html">Introduction</a>
+          <a href="../getting-started.html">Installation</a>
+          <a href="../configuration.html">Configuration</a>
+          <a href="../cli.html">CLI Reference</a>
+          <a href="../output-formats.html">Output Formats</a>
+        </div>
+        <div class="nav-section">
+          <div class="nav-section-title">Metrics</div>
+          <a href="index.html">Overview</a>
+          <div class="nav-group-label">Function</div>
+          <a href="cyclomatic.html">Cyclomatic Complexity</a>
+          <a href="halstead.html">Halstead Volume</a>
+          <a href="maintainability.html">Maintainability Index</a>
+          <a href="closure-depth.html">Closure Depth</a>
+          <a href="long-param-list.html">Long Parameter List</a>
+          <div class="nav-group-label">Class</div>
+          <a href="wmc.html">WMC</a>
+          <a href="dit.html">DIT</a>
+          <a href="nom.html">NOM / NOAM / NOOM</a>
+          <a href="woc.html">WOC</a>
+          <a href="tcc.html">TCC</a>
+          <a href="cbo.html">CBO</a>
+          <a href="rfc.html">RFC</a>
+          <a href="noi.html">NOI</a>
+          <div class="nav-group-label">React / FP</div>
+          <a href="used-components.html">Used Components</a>
+          <a href="jsx-nesting.html">JSX Nesting</a>
+          <a href="hook-complexity.html" class="active">Hook Complexity</a>
+          <a href="hook-cohesion.html">Hook Cohesion</a>
+          <a href="effect-density.html">Effect Density</a>
+          <a href="component-responsibility.html">Component Responsibility</a>
+          <a href="prop-drilling.html">Prop Drilling</a>
+          <a href="render-complexity.html">Render Complexity</a>
+          <div class="nav-group-label">Module</div>
+          <a href="module-cohesion.html">Module Cohesion</a>
+          <a href="function-coupling.html">Function Coupling</a>
+          <a href="pure-function-ratio.html">Pure Function Ratio</a>
+          <div class="nav-group-label">File</div>
+          <a href="technical-debt.html">Technical Debt</a>
+        </div>
+        <div class="nav-section">
+          <div class="nav-section-title">Strategies</div>
+          <a href="../strategies/index.html">Overview</a>
+          <a href="../strategies/god-class.html">God Class</a>
+          <a href="../strategies/brain-method.html">Brain Method</a>
+          <a href="../strategies/feature-envy.html">Feature Envy</a>
+          <a href="../strategies/refused-bequest.html">Refused Bequest</a>
+        </div>
+      </nav>
+    </aside>
+    <main class="content">
+      <div class="breadcrumb">
+        <a href="../index.html">Docs</a><span class="breadcrumb-sep">›</span>
+        <a href="index.html">Metrics</a><span class="breadcrumb-sep">›</span>
+        <span>Hook Complexity</span>
+      </div>
+      <div class="page-header">
+        <span class="badge badge-react">React / FP</span>
+        <h1>Hook Complexity</h1>
+        <p class="tagline">Total and distinct hook calls per React component.</p>
+      </div>
+
+      <h2>What it measures</h2>
+      <p>Hook Complexity captures how much state and side-effect logic a React component manages directly. Two numbers are reported:</p>
+      <ul>
+        <li><strong>hook_count</strong> — total number of hook calls (e.g. three <code>useState</code> calls = 3)</li>
+        <li><strong>distinct_hooks</strong> — number of distinct hook types used (e.g. <code>useState</code> + <code>useEffect</code> = 2)</li>
+      </ul>
+      <p>Both built-in React hooks and custom hooks (any identifier starting with <code>use</code> followed by an uppercase letter) are counted.</p>
+
+      <h2>How it's computed</h2>
+      <p>TSM scans the component function body for hook call expressions at the <em>direct component scope</em> — hook calls inside nested callbacks (e.g. inside a <code>useEffect</code> handler) are not attributed to the component.</p>
+
+      <div class="formula">
+hook_count    = Σ calls to use* at direct component scope
+distinct_hooks = |{hook names used}|
+      </div>
+
+      <h2>Example</h2>
+      <div class="code-block">
+        <div class="code-block-header">TypeScript — hook_count: 4, distinct_hooks: 3</div>
+        <pre><span class="kw">function</span> <span class="fn">UserProfile</span>() {
+  <span class="kw">const</span> [user, setUser] = <span class="fn">useState</span>(<span class="kw">null</span>);    <span class="cmt">// hook 1</span>
+  <span class="kw">const</span> [loading, setLoading] = <span class="fn">useState</span>(<span class="kw">true</span>); <span class="cmt">// hook 2</span>
+  <span class="kw">const</span> ref = <span class="fn">useRef</span>(<span class="kw">null</span>);                   <span class="cmt">// hook 3</span>
+  <span class="fn">useEffect</span>(() => {
+    fetchUser().then(setUser);
+    <span class="cmt">// useState inside here is NOT counted</span>
+  }, []);                                       <span class="cmt">// hook 4</span>
+  <span class="kw">return</span> <span class="str">&lt;div ref={ref}&gt;{user?.name}&lt;/div&gt;</span>;
+}</pre>
+      </div>
+
+      <div class="tip">
+        <strong>Tip:</strong> A high <code>hook_count</code> (say, &gt;6) often signals that a component is managing too many concerns. Consider extracting logic into custom hooks.
+      </div>
+
+      <div class="page-nav">
+        <a href="jsx-nesting.html" class="prev">
+          <span class="nav-dir">← Previous</span><span class="nav-title">JSX Nesting</span>
+        </a>
+        <a href="hook-cohesion.html" class="next">
+          <span class="nav-dir">Next</span><span class="nav-title">Hook Cohesion →</span>
+        </a>
+      </div>
+      <a href="https://github.com/gabrielrf97/tsm/edit/main/docs/metrics/hook-complexity.html" class="edit-link">Edit on GitHub</a>
+    </main>
+  </div>
+</body>
+</html>

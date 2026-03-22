@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+
+  <!-- Getting Started -->
+  <url><loc>https://gabrielrf97.github.io/tsm/</loc><priority>1.0</priority></url>
+  <url><loc>https://gabrielrf97.github.io/tsm/getting-started.html</loc><priority>0.9</priority></url>
+  <url><loc>https://gabrielrf97.github.io/tsm/configuration.html</loc><priority>0.9</priority></url>
+  <url><loc>https://gabrielrf97.github.io/tsm/cli.html</loc><priority>0.9</priority></url>
+  <url><loc>https://gabrielrf97.github.io/tsm/output-formats.html</loc><priority>0.8</priority></url>
+
+  <!-- Metrics -->
+  <url><loc>https://gabrielrf97.github.io/tsm/metrics/index.html</loc><priority>0.9</priority></url>
+  <url><loc>https://gabrielrf97.github.io/tsm/metrics/cyclomatic.html</loc><priority>0.7</priority></url>
+  <url><loc>https://gabrielrf97.github.io/tsm/metrics/halstead.html</loc><priority>0.7</priority></url>
+  <url><loc>https://gabrielrf97.github.io/tsm/metrics/maintainability.html</loc><priority>0.7</priority></url>
+  <url><loc>https://gabrielrf97.github.io/tsm/metrics/closure-depth.html</loc><priority>0.7</priority></url>
+  <url><loc>https://gabrielrf97.github.io/tsm/metrics/long-param-list.html</loc><priority>0.7</priority></url>
+  <url><loc>https://gabrielrf97.github.io/tsm/metrics/wmc.html</loc><priority>0.7</priority></url>
+  <url><loc>https://gabrielrf97.github.io/tsm/metrics/dit.html</loc><priority>0.7</priority></url>
+  <url><loc>https://gabrielrf97.github.io/tsm/metrics/nom.html</loc><priority>0.7</priority></url>
+  <url><loc>https://gabrielrf97.github.io/tsm/metrics/woc.html</loc><priority>0.7</priority></url>
+  <url><loc>https://gabrielrf97.github.io/tsm/metrics/tcc.html</loc><priority>0.7</priority></url>
+  <url><loc>https://gabrielrf97.github.io/tsm/metrics/cbo.html</loc><priority>0.7</priority></url>
+  <url><loc>https://gabrielrf97.github.io/tsm/metrics/rfc.html</loc><priority>0.7</priority></url>
+  <url><loc>https://gabrielrf97.github.io/tsm/metrics/noi.html</loc><priority>0.7</priority></url>
+  <url><loc>https://gabrielrf97.github.io/tsm/metrics/used-components.html</loc><priority>0.7</priority></url>
+  <url><loc>https://gabrielrf97.github.io/tsm/metrics/jsx-nesting.html</loc><priority>0.7</priority></url>
+  <url><loc>https://gabrielrf97.github.io/tsm/metrics/hook-complexity.html</loc><priority>0.7</priority></url>
+  <url><loc>https://gabrielrf97.github.io/tsm/metrics/hook-cohesion.html</loc><priority>0.7</priority></url>
+  <url><loc>https://gabrielrf97.github.io/tsm/metrics/effect-density.html</loc><priority>0.7</priority></url>
+  <url><loc>https://gabrielrf97.github.io/tsm/metrics/component-responsibility.html</loc><priority>0.7</priority></url>
+  <url><loc>https://gabrielrf97.github.io/tsm/metrics/prop-drilling.html</loc><priority>0.7</priority></url>
+  <url><loc>https://gabrielrf97.github.io/tsm/metrics/render-complexity.html</loc><priority>0.7</priority></url>
+  <url><loc>https://gabrielrf97.github.io/tsm/metrics/module-cohesion.html</loc><priority>0.7</priority></url>
+  <url><loc>https://gabrielrf97.github.io/tsm/metrics/function-coupling.html</loc><priority>0.7</priority></url>
+  <url><loc>https://gabrielrf97.github.io/tsm/metrics/pure-function-ratio.html</loc><priority>0.7</priority></url>
+  <url><loc>https://gabrielrf97.github.io/tsm/metrics/technical-debt.html</loc><priority>0.7</priority></url>
+
+  <!-- Strategies -->
+  <url><loc>https://gabrielrf97.github.io/tsm/strategies/index.html</loc><priority>0.8</priority></url>
+  <url><loc>https://gabrielrf97.github.io/tsm/strategies/god-class.html</loc><priority>0.7</priority></url>
+  <url><loc>https://gabrielrf97.github.io/tsm/strategies/brain-method.html</loc><priority>0.7</priority></url>
+  <url><loc>https://gabrielrf97.github.io/tsm/strategies/feature-envy.html</loc><priority>0.7</priority></url>
+  <url><loc>https://gabrielrf97.github.io/tsm/strategies/refused-bequest.html</loc><priority>0.7</priority></url>
+
+</urlset>
