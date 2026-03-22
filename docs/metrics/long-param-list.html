@@ -3,9 +3,9 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Long Parameter List — TSM Docs</title>
+  <title>Long Parameter List — tsmetrics Docs</title>
   <meta name="description" content="Long Parameter List flags functions with more than 4 parameters — a common sign that a function is doing too much.">
-  <meta property="og:title" content="Long Parameter List — TSM">
+  <meta property="og:title" content="Long Parameter List — tsmetrics">
   <meta property="og:description" content="Flags functions with more than 4 parameters.">
   <meta property="og:type" content="website">
   <meta property="og:url" content="https://gabrielrf97.github.io/tsm/metrics/long-param-list.html">
@@ -15,7 +15,7 @@
   <div class="layout">
     <aside class="sidebar">
       <div class="sidebar-header">
-        <a href="../index.html" class="logo">TSM</a>
+        <a href="../index.html" class="logo">tsmetrics</a>
         <p class="sidebar-subtitle">TypeScript Static Analyzer</p>
       </div>
       <nav class="sidebar-nav">
@@ -85,10 +85,10 @@
 
       <h2>What it measures</h2>
       <p>A <em>Long Parameter List</em> is a classic code smell from Fowler's <em>Refactoring</em>: functions with many parameters are harder to call correctly, harder to test, and often a sign that the function is doing too much or that related data should be grouped into an object.</p>
-      <p>TSM reports the parameter count for every function and flags those exceeding the threshold (default: 4).</p>
+      <p>tsmetrics reports the parameter count for every function and flags those exceeding the threshold (default: 4).</p>
 
       <h2>How it's computed</h2>
-      <p>TSM counts formal parameters in the function signature. Destructured object parameters count as <strong>one</strong> parameter regardless of how many properties are destructured.</p>
+      <p>tsmetrics counts formal parameters in the function signature. Destructured object parameters count as <strong>one</strong> parameter regardless of how many properties are destructured.</p>
 
       <div class="formula">
 is_long = param_count &gt; threshold   <span class="comment">(default threshold: 4)</span>
@@ -121,7 +121,7 @@ is_long = param_count &gt; threshold   <span class="comment">(default threshold:
       </div>
 
       <h2>Configuration</h2>
-      <p>Override the threshold in <code>tsm.yaml</code>:</p>
+      <p>Override the threshold in <code>tsmetrics.yaml</code>:</p>
       <div class="config-block">thresholds:
   params:
     warning: 4   # flag at 4+

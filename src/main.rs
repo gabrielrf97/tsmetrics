@@ -1,14 +1,14 @@
 use anyhow::Result;
 use clap::{Parser, Subcommand, ValueEnum};
 use std::path::PathBuf;
-use ts_static_analyzer::{
+use tsmetrics::{
     analyze,
     config::{Config, OutputFormat},
 };
 
 #[derive(Parser, Debug)]
 #[command(
-    name = "ts-static-analyzer",
+    name = "tsmetrics",
     about = "TypeScript static analyzer — metrics for functions, classes, and files",
     version
 )]
@@ -115,7 +115,7 @@ fn main() -> Result<()> {
                     .count();
             }
 
-            ts_static_analyzer::output::render(&result, &output_format)?;
+            tsmetrics::output::render(&result, &output_format)?;
 
             if timing {
                 eprintln!(

@@ -3,14 +3,14 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>DIT — TSM Docs</title>
+  <title>DIT — tsmetrics Docs</title>
   <link rel="stylesheet" href="../style.css">
 </head>
 <body>
   <div class="layout">
     <aside class="sidebar">
       <div class="sidebar-header">
-        <a href="../index.html" class="logo">TSM</a>
+        <a href="../index.html" class="logo">tsmetrics</a>
         <p class="sidebar-subtitle">TypeScript Static Analyzer</p>
       </div>
       <nav class="sidebar-nav">
@@ -86,14 +86,14 @@
           <span class="num">1</span> + DIT(<span class="var">parent</span>)    &nbsp;&nbsp; otherwise
       </div>
 
-      <h2>How TSM computes DIT</h2>
+      <h2>How tsmetrics computes DIT</h2>
       <p>
-        TSM resolves the full chain within the analyzed files using memoized recursive lookup.
+        tsmetrics resolves the full chain within the analyzed files using memoized recursive lookup.
         Cycle detection prevents infinite loops in the rare case of circular declarations.
       </p>
       <p>
         When a parent class is defined <strong>outside the analyzed files</strong> (e.g. a
-        third-party library or a built-in like <code>Error</code>), TSM treats that parent as the
+        third-party library or a built-in like <code>Error</code>), tsmetrics treats that parent as the
         root of the hierarchy. The child class therefore has DIT = 1, not 0, reflecting that it
         does inherit from something even if the depth cannot be fully resolved.
       </p>
@@ -112,7 +112,7 @@
       </table>
 
       <h2>Thresholds</h2>
-      <p>DIT is an <strong>informational metric</strong> with no default warning or error thresholds. It is not configurable via <code>tsm.yaml</code>.</p>
+      <p>DIT is an <strong>informational metric</strong> with no default warning or error thresholds. It is not configurable via <code>tsmetrics.yaml</code>.</p>
 
       <h2>Example</h2>
       <div class="code-block">

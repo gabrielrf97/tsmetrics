@@ -17,20 +17,20 @@ use std::time::Instant;
 
 use config::Config;
 use structs::AnalysisResult;
-use thresholds::{check_class_violations, check_function_violations, load_tsm_config};
+use thresholds::{check_class_violations, check_function_violations, load_tsmetrics_config};
 
 /// Run analysis over all TypeScript files found in the configured paths.
 pub fn analyze(config: &Config) -> Result<AnalysisResult> {
-    // Load tsm.yaml config (thresholds + exclude patterns)
+    // Load tsmetrics.yaml config (thresholds + exclude patterns)
     let cwd = std::env::current_dir().unwrap_or_default();
     let mut search_dirs: Vec<&std::path::Path> = vec![cwd.as_path()];
     let path_refs: Vec<&std::path::Path> = config.paths.iter().map(|p| p.as_path()).collect();
     search_dirs.extend(path_refs.iter().copied());
-    let tsm_config = load_tsm_config(&search_dirs)?;
-    let thresholds_config = tsm_config.thresholds;
+    let tsmetrics_config = load_tsmetrics_config(&search_dirs)?;
+    let thresholds_config = tsmetrics_config.thresholds;
 
     // Merge: YAML excludes + CLI excludes (DEFAULT_EXCLUDES already applied in collect_ts_files)
-    let mut extra_excludes: Vec<String> = tsm_config.exclude;
+    let mut extra_excludes: Vec<String> = tsmetrics_config.exclude;
     extra_excludes.extend(config.exclude.iter().cloned());
 
     let files = utils::collect_ts_files(&config.paths, &extra_excludes);
@@ -179,7 +179,7 @@ mod tests {
     }
 
     fn tempdir_named(suffix: &str) -> std::path::PathBuf {
-        let dir = std::env::temp_dir().join(format!("tsm_{}_{}", std::process::id(), suffix));
+        let dir = std::env::temp_dir().join(format!("tsmetrics_{}_{}", std::process::id(), suffix));
         fs::create_dir_all(&dir).unwrap();
         dir
     }

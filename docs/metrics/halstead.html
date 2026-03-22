@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Halstead Volume — TSM Docs</title>
+  <title>Halstead Volume — tsmetrics Docs</title>
   <link rel="stylesheet" href="../style.css">
 </head>
 <body>
@@ -11,7 +11,7 @@
     
     <aside class="sidebar">
       <div class="sidebar-header">
-        <a href="../index.html" class="logo">TSM</a>
+        <a href="../index.html" class="logo">tsmetrics</a>
         <p class="sidebar-subtitle">TypeScript Static Analyzer</p>
       </div>
       <nav class="sidebar-nav">
@@ -80,8 +80,8 @@
       <p>Halstead Volume (V), part of Maurice Halstead's 1977 software science metrics, quantifies the amount of information carried by a function. It combines the total token count (N) with the vocabulary richness (η) to produce a size estimate that is more meaningful than raw line counts.</p>
       <p>A higher volume means the function carries more information, requires more mental effort to understand, and is more error-prone. Volume is also used to compute the <a href="maintainability.html">Maintainability Index</a> and <a href="technical-debt.html">Technical Debt</a>.</p>
 
-      <h2>How it's calculated in TSM</h2>
-      <p>TSM classifies every AST leaf node as either an <strong>operator</strong> or an <strong>operand</strong>:</p>
+      <h2>How it's calculated in tsmetrics</h2>
+      <p>tsmetrics classifies every AST leaf node as either an <strong>operator</strong> or an <strong>operand</strong>:</p>
 
       <h3>Operators (anonymous leaf tokens)</h3>
       <p>

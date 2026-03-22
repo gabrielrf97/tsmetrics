@@ -3,9 +3,9 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Function Coupling — TSM Docs</title>
+  <title>Function Coupling — tsmetrics Docs</title>
   <meta name="description" content="Function Coupling (Fan-Out) counts the distinct import sources a module depends on — a measure of how coupled it is to the rest of the codebase.">
-  <meta property="og:title" content="Function Coupling — TSM">
+  <meta property="og:title" content="Function Coupling — tsmetrics">
   <meta property="og:description" content="Fan-Out: number of distinct import sources per module.">
   <meta property="og:type" content="website">
   <meta property="og:url" content="https://gabrielrf97.github.io/tsm/metrics/function-coupling.html">
@@ -15,7 +15,7 @@
   <div class="layout">
     <aside class="sidebar">
       <div class="sidebar-header">
-        <a href="../index.html" class="logo">TSM</a>
+        <a href="../index.html" class="logo">tsmetrics</a>
         <p class="sidebar-subtitle">TypeScript Static Analyzer</p>
       </div>
       <nav class="sidebar-nav">
@@ -85,7 +85,7 @@
 
       <h2>What it measures</h2>
       <p>Function Coupling measures the <em>fan-out</em> of a module — the number of distinct import sources it depends on. A high fan-out means the module has many external dependencies, making it harder to change, test in isolation, and understand.</p>
-      <p>TSM classifies imports into three categories:</p>
+      <p>tsmetrics classifies imports into three categories:</p>
       <ul>
         <li><strong>Relative</strong> — paths starting with <code>./</code> or <code>../</code> (intra-project)</li>
         <li><strong>Package</strong> — npm packages, Node built-ins, or path aliases</li>

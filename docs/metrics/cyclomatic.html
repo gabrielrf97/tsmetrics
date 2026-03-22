@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Cyclomatic Complexity — TSM Docs</title>
+  <title>Cyclomatic Complexity — tsmetrics Docs</title>
   <link rel="stylesheet" href="../style.css">
 </head>
 <body>
@@ -11,7 +11,7 @@
     
     <aside class="sidebar">
       <div class="sidebar-header">
-        <a href="../index.html" class="logo">TSM</a>
+        <a href="../index.html" class="logo">tsmetrics</a>
         <p class="sidebar-subtitle">TypeScript Static Analyzer</p>
       </div>
       <nav class="sidebar-nav">
@@ -74,8 +74,8 @@ CC = 1 + <span class="var">number of decision points</span>
       <p>Cyclomatic Complexity (CC), introduced by Thomas McCabe in 1976, quantifies the structural complexity of a function by counting its independent execution paths. A function with no branching has CC = 1. Every additional decision point adds one more path.</p>
       <p>Higher CC correlates with increased testing effort (you need at least as many test cases as CC to achieve full branch coverage) and higher likelihood of bugs.</p>
 
-      <h2>How it's calculated in TSM</h2>
-      <p>TSM walks the tree-sitter AST of the function body and counts these node kinds:</p>
+      <h2>How it's calculated in tsmetrics</h2>
+      <p>tsmetrics walks the tree-sitter AST of the function body and counts these node kinds:</p>
       <ul>
         <li><code>if_statement</code> — +1 per <code>if</code> (the <code>else</code> branch is <em>not</em> counted — it's the complement, not a new path)</li>
         <li><code>while_statement</code>, <code>do_statement</code> — +1</li>

@@ -79,8 +79,8 @@ pub struct Violation {
     pub severity: Severity,
 }
 
-/// Combined configuration loaded from tsm.yaml (thresholds + exclude patterns).
-pub struct TsmConfig {
+/// Combined configuration loaded from tsmetrics.yaml (thresholds + exclude patterns).
+pub struct TsmetricsConfig {
     pub thresholds: ThresholdsConfig,
     /// Directory/file name patterns that should be excluded from scanning.
     pub exclude: Vec<String>,
@@ -89,7 +89,7 @@ pub struct TsmConfig {
 // ── Internal types for partial YAML deserialization ────────────────────────────
 
 #[derive(Debug, Deserialize, Default)]
-struct TsmYaml {
+struct TsmetricsYaml {
     #[serde(default)]
     thresholds: PartialThresholdsConfig,
     #[serde(default)]
@@ -133,33 +133,33 @@ fn merge_threshold(
     Ok(merged)
 }
 
-/// Load combined configuration (thresholds + exclude patterns) from tsm.yaml.
+/// Load combined configuration (thresholds + exclude patterns) from tsmetrics.yaml.
 /// Falls back to defaults if no file is found.
-pub fn load_tsm_config(search_dirs: &[&Path]) -> anyhow::Result<TsmConfig> {
+pub fn load_tsmetrics_config(search_dirs: &[&Path]) -> anyhow::Result<TsmetricsConfig> {
     for &dir in search_dirs {
-        let candidate = dir.join("tsm.yaml");
+        let candidate = dir.join("tsmetrics.yaml");
         if candidate.exists() {
-            return load_tsm_config_from_file(&candidate);
+            return load_tsmetrics_config_from_file(&candidate);
         }
     }
-    Ok(TsmConfig {
+    Ok(TsmetricsConfig {
         thresholds: ThresholdsConfig::default(),
         exclude: Vec::new(),
     })
 }
 
-fn load_tsm_config_from_file(path: &Path) -> anyhow::Result<TsmConfig> {
+fn load_tsmetrics_config_from_file(path: &Path) -> anyhow::Result<TsmetricsConfig> {
     let content = std::fs::read_to_string(path)?;
     if content.trim().is_empty() {
-        return Ok(TsmConfig {
+        return Ok(TsmetricsConfig {
             thresholds: ThresholdsConfig::default(),
             exclude: Vec::new(),
         });
     }
-    let yaml: TsmYaml = serde_yaml::from_str(&content)
+    let yaml: TsmetricsYaml = serde_yaml::from_str(&content)
         .map_err(|e| anyhow::anyhow!("Failed to parse {}: {}", path.display(), e))?;
     let defaults = ThresholdsConfig::default();
-    Ok(TsmConfig {
+    Ok(TsmetricsConfig {
         thresholds: ThresholdsConfig {
             cyclomatic_complexity: merge_threshold(
                 yaml.thresholds.cyclomatic_complexity,
@@ -175,10 +175,10 @@ fn load_tsm_config_from_file(path: &Path) -> anyhow::Result<TsmConfig> {
     })
 }
 
-/// Load thresholds from a tsm.yaml found in any of the given directories.
+/// Load thresholds from a tsmetrics.yaml found in any of the given directories.
 /// Falls back to defaults if no file is found or the file has no `thresholds` section.
 pub fn load_thresholds(search_dirs: &[&Path]) -> anyhow::Result<ThresholdsConfig> {
-    Ok(load_tsm_config(search_dirs)?.thresholds)
+    Ok(load_tsmetrics_config(search_dirs)?.thresholds)
 }
 
 /// Check function metrics against thresholds, returning any violations.
@@ -319,7 +319,7 @@ mod tests {
     #[test]
     fn test_load_thresholds_partial_override() {
         let dir = tempfile::tempdir().unwrap();
-        let yaml_path = dir.path().join("tsm.yaml");
+        let yaml_path = dir.path().join("tsmetrics.yaml");
         std::fs::write(
             &yaml_path,
             "thresholds:\n  cyclomatic_complexity:\n    warning: 5\n    error: 15\n",
@@ -334,7 +334,7 @@ mod tests {
     #[test]
     fn test_load_thresholds_only_warning_overridden() {
         let dir = tempfile::tempdir().unwrap();
-        let yaml_path = dir.path().join("tsm.yaml");
+        let yaml_path = dir.path().join("tsmetrics.yaml");
         std::fs::write(&yaml_path, "thresholds:\n  loc:\n    warning: 30\n").unwrap();
         let config = load_thresholds(&[dir.path()]).unwrap();
         assert_eq!(config.loc.warning, 30);
@@ -346,7 +346,7 @@ mod tests {
         // Setting only warning: 200 for loc (default error: 100) produces warning > error,
         // which must be rejected instead of silently misclassifying values in [100, 199].
         let dir = tempfile::tempdir().unwrap();
-        let yaml_path = dir.path().join("tsm.yaml");
+        let yaml_path = dir.path().join("tsmetrics.yaml");
         std::fs::write(&yaml_path, "thresholds:\n  loc:\n    warning: 200\n").unwrap();
         let result = load_thresholds(&[dir.path()]);
         assert!(result.is_err(), "expected error for warning > error, got: {:?}", result);
@@ -357,7 +357,7 @@ mod tests {
     #[test]
     fn test_load_thresholds_empty_thresholds_section() {
         let dir = tempfile::tempdir().unwrap();
-        let yaml_path = dir.path().join("tsm.yaml");
+        let yaml_path = dir.path().join("tsmetrics.yaml");
         std::fs::write(&yaml_path, "thresholds: {}\n").unwrap();
         let config = load_thresholds(&[dir.path()]).unwrap();
         let defaults = ThresholdsConfig::default();
@@ -368,7 +368,7 @@ mod tests {
     #[test]
     fn test_load_thresholds_empty_file_uses_defaults() {
         let dir = tempfile::tempdir().unwrap();
-        let yaml_path = dir.path().join("tsm.yaml");
+        let yaml_path = dir.path().join("tsmetrics.yaml");
         std::fs::write(&yaml_path, "").unwrap();
         let config = load_thresholds(&[dir.path()]).unwrap();
         let defaults = ThresholdsConfig::default();

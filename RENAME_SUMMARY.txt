@@ -1,0 +1,31 @@
+Rename: tsm → tsmetrics
+=======================
+
+The following identifiers were renamed across the codebase:
+
+Binary / package
+  ts-static-analyzer  →  tsmetrics  (Cargo.toml package name, [[bin]] name, src/main.rs)
+
+Config file
+  tsm.yaml            →  tsmetrics.yaml  (src/thresholds/mod.rs, src/lib.rs, all tests, README, docs)
+
+Rust types & functions (src/thresholds/mod.rs)
+  TsmConfig                    →  TsmetricsConfig
+  TsmYaml                      →  TsmetricsYaml
+  load_tsm_config              →  load_tsmetrics_config
+  load_tsm_config_from_file    →  load_tsmetrics_config_from_file
+
+Rust variables / temp-dir prefix (src/lib.rs)
+  tsm_config   →  tsmetrics_config
+  tsm_{pid}_…  →  tsmetrics_{pid}_…  (tempdir_named helper)
+
+Display name in docs & output (docs/, src/output/mod.rs, README.md)
+  "TSM"                →  "tsmetrics"
+  "TSM Docs"           →  "tsmetrics Docs"
+  "TSM Analysis Report"→  "tsmetrics Analysis Report"
+
+What was NOT renamed
+--------------------
+GitHub repository URL:  https://github.com/gabrielrf97/tsm        (repo not renamed)
+GitHub Pages URL:       https://gabrielrf97.github.io/tsm/        (hosted under same repo)
+Git clone command:      git clone .../tsm.git && cd tsm            (matches repo directory)

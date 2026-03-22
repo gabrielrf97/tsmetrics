@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Getting Started — TSM Docs</title>
+  <title>Getting Started — tsmetrics Docs</title>
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
@@ -11,7 +11,7 @@
     
     <aside class="sidebar">
       <div class="sidebar-header">
-        <a href="index.html" class="logo">TSM</a>
+        <a href="index.html" class="logo">tsmetrics</a>
         <p class="sidebar-subtitle">TypeScript Static Analyzer</p>
       </div>
       <nav class="sidebar-nav">
@@ -60,7 +60,7 @@
       </div>
       <div class="page-header">
         <h1>Getting Started</h1>
-        <p class="tagline">Install TSM and run your first analysis in under two minutes.</p>
+        <p class="tagline">Install tsmetrics and run your first analysis in under two minutes.</p>
       </div>
 
       <h2>Prerequisites</h2>
@@ -76,7 +76,7 @@
         <pre>git clone https://github.com/gabrielrf97/tsm.git
 cd tsm
 cargo build --release
-<span class="cmt"># Binary at target/release/ts-static-analyzer</span></pre>
+<span class="cmt"># Binary at target/release/tsmetrics</span></pre>
       </div>
 
       <h3>Install globally</h3>
@@ -86,17 +86,17 @@ cargo build --release
       </div>
 
       <h2>First Analysis</h2>
-      <p>Point TSM at a TypeScript file or directory:</p>
+      <p>Point tsmetrics at a TypeScript file or directory:</p>
       <div class="code-block">
         <div class="code-block-header">bash</div>
         <pre><span class="cmt"># Analyze a single file</span>
-ts-static-analyzer analyze src/utils.ts
+tsmetrics analyze src/utils.ts
 
 <span class="cmt"># Analyze an entire directory (recursive)</span>
-ts-static-analyzer analyze src/
+tsmetrics analyze src/
 
 <span class="cmt"># Analyze multiple paths</span>
-ts-static-analyzer analyze src/ lib/ types/</pre>
+tsmetrics analyze src/ lib/ types/</pre>
       </div>
 
       <h3>Example output (table format)</h3>
@@ -129,21 +129,21 @@ ts-static-analyzer analyze src/ lib/ types/</pre>
       <div class="code-block">
         <div class="code-block-header">bash</div>
         <pre><span class="cmt"># Only show functions with CC ≥ 10</span>
-ts-static-analyzer analyze src/ --min-complexity 10
+tsmetrics analyze src/ --min-complexity 10
 
 <span class="cmt"># Only show functions with ≥ 50 LOC</span>
-ts-static-analyzer analyze src/ --min-loc 50
+tsmetrics analyze src/ --min-loc 50
 
 <span class="cmt"># Show verbose output (skipped files reported to stderr)</span>
-ts-static-analyzer analyze src/ --verbose
+tsmetrics analyze src/ --verbose
 
 <span class="cmt"># Show timing information</span>
-ts-static-analyzer analyze src/ --timing</pre>
+tsmetrics analyze src/ --timing</pre>
       </div>
 
       <h2>Next steps</h2>
       <ul>
-        <li>Configure <a href="configuration.html">thresholds in tsm.yaml</a></li>
+        <li>Configure <a href="configuration.html">thresholds in tsmetrics.yaml</a></li>
         <li>Explore <a href="metrics/index.html">all available metrics</a></li>
         <li>Learn about <a href="strategies/index.html">design smell detection</a></li>
       </ul>

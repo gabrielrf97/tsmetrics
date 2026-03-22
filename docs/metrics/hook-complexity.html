@@ -3,9 +3,9 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Hook Complexity — TSM Docs</title>
+  <title>Hook Complexity — tsmetrics Docs</title>
   <meta name="description" content="Hook Complexity counts the total and distinct hook calls in a React component — a measure of how much state and side-effect logic it contains.">
-  <meta property="og:title" content="Hook Complexity — TSM">
+  <meta property="og:title" content="Hook Complexity — tsmetrics">
   <meta property="og:description" content="Counts total and distinct hook calls per React component.">
   <meta property="og:type" content="website">
   <meta property="og:url" content="https://gabrielrf97.github.io/tsm/metrics/hook-complexity.html">
@@ -15,7 +15,7 @@
   <div class="layout">
     <aside class="sidebar">
       <div class="sidebar-header">
-        <a href="../index.html" class="logo">TSM</a>
+        <a href="../index.html" class="logo">tsmetrics</a>
         <p class="sidebar-subtitle">TypeScript Static Analyzer</p>
       </div>
       <nav class="sidebar-nav">
@@ -92,7 +92,7 @@
       <p>Both built-in React hooks and custom hooks (any identifier starting with <code>use</code> followed by an uppercase letter) are counted.</p>
 
       <h2>How it's computed</h2>
-      <p>TSM scans the component function body for hook call expressions at the <em>direct component scope</em> — hook calls inside nested callbacks (e.g. inside a <code>useEffect</code> handler) are not attributed to the component.</p>
+      <p>tsmetrics scans the component function body for hook call expressions at the <em>direct component scope</em> — hook calls inside nested callbacks (e.g. inside a <code>useEffect</code> handler) are not attributed to the component.</p>
 
       <div class="formula">
 hook_count    = Σ calls to use* at direct component scope

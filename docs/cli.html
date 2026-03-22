@@ -3,10 +3,10 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>CLI Reference — TSM Docs</title>
-  <meta name="description" content="All flags and options for the ts-static-analyzer CLI, including --format, --exclude, --min-complexity, and more.">
-  <meta property="og:title" content="CLI Reference — TSM">
-  <meta property="og:description" content="All flags and options for the ts-static-analyzer CLI.">
+  <title>CLI Reference — tsmetrics Docs</title>
+  <meta name="description" content="All flags and options for the tsmetrics CLI, including --format, --exclude, --min-complexity, and more.">
+  <meta property="og:title" content="CLI Reference — tsmetrics">
+  <meta property="og:description" content="All flags and options for the tsmetrics CLI.">
   <meta property="og:type" content="website">
   <meta property="og:url" content="https://gabrielrf97.github.io/tsm/cli.html">
   <link rel="stylesheet" href="style.css">
@@ -16,7 +16,7 @@
 
     <aside class="sidebar">
       <div class="sidebar-header">
-        <a href="index.html" class="logo">TSM</a>
+        <a href="index.html" class="logo">tsmetrics</a>
         <p class="sidebar-subtitle">TypeScript Static Analyzer</p>
       </div>
       <nav class="sidebar-nav">
@@ -81,13 +81,13 @@
       </div>
       <div class="page-header">
         <h1>CLI Reference</h1>
-        <p class="tagline">All flags and options for <code>ts-static-analyzer</code>.</p>
+        <p class="tagline">All flags and options for <code>tsmetrics</code>.</p>
       </div>
 
       <h2>Synopsis</h2>
       <div class="code-block">
         <div class="code-block-header">bash</div>
-        <pre>ts-static-analyzer analyze &lt;PATH&gt;... [OPTIONS]</pre>
+        <pre>tsmetrics analyze &lt;PATH&gt;... [OPTIONS]</pre>
       </div>
 
       <h2>Arguments</h2>
@@ -114,7 +114,7 @@
       </table>
 
       <h2>Default exclusions</h2>
-      <p>TSM automatically skips these directories unless you explicitly pass them as a <code>&lt;PATH&gt;</code>:</p>
+      <p>tsmetrics automatically skips these directories unless you explicitly pass them as a <code>&lt;PATH&gt;</code>:</p>
       <div class="code-block">
         <div class="code-block-header">default excluded paths</div>
         <pre>node_modules/    .git/    dist/    build/    coverage/    .next/</pre>
@@ -125,28 +125,28 @@
       <div class="code-block">
         <div class="code-block-header">bash</div>
         <pre><span class="cmt"># Table output (default)</span>
-ts-static-analyzer analyze ./src
+tsmetrics analyze ./src
 
 <span class="cmt"># JSON output — pipe to jq for querying</span>
-ts-static-analyzer analyze ./src --format json | jq '.files[].functions[] | select(.cyclomatic_complexity > 10)'
+tsmetrics analyze ./src --format json | jq '.files[].functions[] | select(.cyclomatic_complexity > 10)'
 
 <span class="cmt"># CSV output — import into spreadsheet</span>
-ts-static-analyzer analyze ./src --format csv > metrics.csv
+tsmetrics analyze ./src --format csv > metrics.csv
 
 <span class="cmt"># Self-contained HTML report</span>
-ts-static-analyzer analyze ./src --format html > report.html
+tsmetrics analyze ./src --format html > report.html
 
 <span class="cmt"># Exclude test files and generated code</span>
-ts-static-analyzer analyze ./src --exclude "**/*.test.ts" --exclude "**/*.generated.ts"
+tsmetrics analyze ./src --exclude "**/*.test.ts" --exclude "**/*.generated.ts"
 
 <span class="cmt"># Filter to complex functions only</span>
-ts-static-analyzer analyze ./src --min-complexity 10
+tsmetrics analyze ./src --min-complexity 10
 
 <span class="cmt"># Show timing info</span>
-ts-static-analyzer analyze ./src --timing
+tsmetrics analyze ./src --timing
 
 <span class="cmt"># Verbose — see skipped files</span>
-ts-static-analyzer analyze ./src --verbose 2>&amp;1 | grep SKIP</pre>
+tsmetrics analyze ./src --verbose 2>&amp;1 | grep SKIP</pre>
       </div>
 
       <h2>Exit codes</h2>
