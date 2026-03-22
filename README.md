@@ -5,7 +5,7 @@
 [![Built with Rust](https://img.shields.io/badge/built%20with-Rust-orange?logo=rust)](https://www.rust-lang.org/)
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue)](LICENSE)
 
-→ **[Full documentation](https://gabrielrf97.github.io/tsm/)**
+→ **[Full documentation](https://gabrielrf97.github.io/tsmetrics/)**
 
 ---
 
@@ -22,7 +22,7 @@ TSM parses your TypeScript/TSX files and computes 25+ quality metrics in paralle
 
 ```bash
 # Install
-git clone https://github.com/gabrielrf97/tsm.git && cd tsm
+git clone https://github.com/gabrielrf97/tsmetrics.git && cd tsmetrics
 cargo install --path .
 
 # Analyze a directory
@@ -76,7 +76,7 @@ thresholds:
 
 ## Documentation
 
-Full docs at **[gabrielrf97.github.io/tsm](https://gabrielrf97.github.io/tsm/)** — metrics reference, configuration, CLI flags, output formats, and design smell detection rules.
+Full docs at **[gabrielrf97.github.io/tsmetrics](https://gabrielrf97.github.io/tsmetrics/)** — metrics reference, configuration, CLI flags, output formats, and design smell detection rules.
 
 ## Contributing
 
