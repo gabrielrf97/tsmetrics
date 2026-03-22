@@ -3,9 +3,9 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>TSM — TypeScript Static Analyzer</title>
-  <meta name="description" content="TSM is a fast, tree-sitter-powered TypeScript static analyzer written in Rust. Compute 25+ metrics across functions, classes, React components, and modules.">
-  <meta property="og:title" content="TSM — TypeScript Static Analyzer">
+  <title>tsmetrics — TypeScript Static Analyzer</title>
+  <meta name="description" content="tsmetrics is a fast, tree-sitter-powered TypeScript static analyzer written in Rust. Compute 25+ metrics across functions, classes, React components, and modules.">
+  <meta property="og:title" content="tsmetrics — TypeScript Static Analyzer">
   <meta property="og:description" content="Fast, tree-sitter-powered TypeScript static analyzer. 25+ metrics, React/FP support, design smell detection.">
   <meta property="og:type" content="website">
   <meta property="og:url" content="https://gabrielrf97.github.io/tsm/">
@@ -16,7 +16,7 @@
 
     <aside class="sidebar">
       <div class="sidebar-header">
-        <a href="index.html" class="logo">TSM</a>
+        <a href="index.html" class="logo">tsmetrics</a>
         <p class="sidebar-subtitle">TypeScript Static Analyzer</p>
       </div>
       <nav class="sidebar-nav">
@@ -76,7 +76,7 @@
     <main class="content">
 
       <div class="hero">
-        <h1>TSM</h1>
+        <h1>tsmetrics</h1>
         <p class="tagline">A fast, tree-sitter-powered TypeScript static analyzer written in Rust. Point it at your codebase and get 25+ actionable metrics in seconds.</p>
         <div class="hero-badges">
           <span class="hero-badge">Rust</span>
@@ -96,13 +96,13 @@
         <span class="prompt"># 1. Install</span><br>
         git clone https://github.com/gabrielrf97/tsm &amp;&amp; cd tsm &amp;&amp; cargo install --path .<br><br>
         <span class="prompt"># 2. Run</span><br>
-        ts-static-analyzer analyze ./src<br><br>
+        tsmetrics analyze ./src<br><br>
         <span class="prompt"># 3. Export a report</span><br>
-        ts-static-analyzer analyze ./src --format html &gt; report.html
+        tsmetrics analyze ./src --format html &gt; report.html
       </div>
 
-      <h2>What is TSM?</h2>
-      <p>TSM (<em>TypeScript Static Analyzer</em>) parses TypeScript and TSX files using <strong>tree-sitter</strong> and computes a comprehensive set of software quality metrics. It is written in Rust and designed for speed, correctness, and scriptability.</p>
+      <h2>What is tsmetrics?</h2>
+      <p>tsmetrics (<em>TypeScript Static Analyzer</em>) parses TypeScript and TSX files using <strong>tree-sitter</strong> and computes a comprehensive set of software quality metrics. It is written in Rust and designed for speed, correctness, and scriptability.</p>
       <p>Metrics are grouped into five categories:</p>
       <ul>
         <li><strong>Function-level</strong> — Cyclomatic Complexity, Halstead Volume, Maintainability Index, LOC, nesting depth, closure depth, parameter count</li>
@@ -128,7 +128,7 @@
         <div class="feature-card">
           <div class="fc-icon">⚙️</div>
           <h3>Configurable</h3>
-          <p>Override warning/error thresholds per metric via <code>tsm.yaml</code>. Exclude paths you don't care about.</p>
+          <p>Override warning/error thresholds per metric via <code>tsmetrics.yaml</code>. Exclude paths you don't care about.</p>
         </div>
         <div class="feature-card">
           <div class="fc-icon">📤</div>

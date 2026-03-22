@@ -1,12 +1,12 @@
 [package]
-name = "ts-static-analyzer"
+name = "tsmetrics"
 version = "0.1.0"
 edition = "2021"
 description = "TypeScript Static Analyzer - A static analysis tool for TypeScript using tree-sitter"
 license = "MIT"
 
 [[bin]]
-name = "ts-static-analyzer"
+name = "tsmetrics"
 path = "src/main.rs"
 
 [dependencies]

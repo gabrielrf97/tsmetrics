@@ -3,10 +3,10 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Configuration — TSM Docs</title>
-  <meta name="description" content="Customize TSM metric thresholds and path exclusions via a tsm.yaml config file.">
-  <meta property="og:title" content="Configuration — TSM">
-  <meta property="og:description" content="Customize metric thresholds and path exclusions via tsm.yaml.">
+  <title>Configuration — tsmetrics Docs</title>
+  <meta name="description" content="Customize tsmetrics metric thresholds and path exclusions via a tsmetrics.yaml config file.">
+  <meta property="og:title" content="Configuration — tsmetrics">
+  <meta property="og:description" content="Customize metric thresholds and path exclusions via tsmetrics.yaml.">
   <meta property="og:type" content="website">
   <meta property="og:url" content="https://gabrielrf97.github.io/tsm/configuration.html">
   <link rel="stylesheet" href="style.css">
@@ -16,7 +16,7 @@
 
     <aside class="sidebar">
       <div class="sidebar-header">
-        <a href="index.html" class="logo">TSM</a>
+        <a href="index.html" class="logo">tsmetrics</a>
         <p class="sidebar-subtitle">TypeScript Static Analyzer</p>
       </div>
       <nav class="sidebar-nav">
@@ -81,13 +81,13 @@
       </div>
       <div class="page-header">
         <h1>Configuration</h1>
-        <p class="tagline">Customize metric thresholds and path exclusions via <code>tsm.yaml</code>.</p>
+        <p class="tagline">Customize metric thresholds and path exclusions via <code>tsmetrics.yaml</code>.</p>
       </div>
 
-      <h2>tsm.yaml</h2>
-      <p>TSM looks for a <code>tsm.yaml</code> file in the current working directory (then its parents). If not found, all settings fall back to built-in defaults.</p>
+      <h2>tsmetrics.yaml</h2>
+      <p>tsmetrics looks for a <code>tsmetrics.yaml</code> file in the current working directory (then its parents). If not found, all settings fall back to built-in defaults.</p>
       <div class="code-block">
-        <div class="code-block-header">tsm.yaml</div>
+        <div class="code-block-header">tsmetrics.yaml</div>
         <pre><span class="cmt"># All fields are optional — omitted keys use defaults.</span>
 
 <span class="cmt"># Exclude paths from analysis (glob patterns)</span>
@@ -120,7 +120,7 @@ thresholds:
 
       <h2>exclude</h2>
       <p>The <code>exclude</code> field accepts a list of glob patterns. Matched files are skipped entirely — no metrics are computed for them.</p>
-      <p>TSM also has built-in default exclusions that always apply:</p>
+      <p>tsmetrics also has built-in default exclusions that always apply:</p>
       <div class="code-block">
         <div class="code-block-header">always excluded</div>
         <pre>node_modules/    .git/    dist/    build/    coverage/    .next/</pre>
@@ -149,7 +149,7 @@ thresholds:
       <p>Violations appear in the output (table and HTML formats show a violations table; JSON includes them in the <code>violations</code> array).</p>
 
       <div class="warning">
-        <strong>Constraint:</strong> <code>warning</code> must be &le; <code>error</code>. TSM will fail with an error message if this is violated.
+        <strong>Constraint:</strong> <code>warning</code> must be &le; <code>error</code>. tsmetrics will fail with an error message if this is violated.
       </div>
 
       <h2>Partial overrides</h2>

@@ -3,14 +3,14 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>WMC — TSM Docs</title>
+  <title>WMC — tsmetrics Docs</title>
   <link rel="stylesheet" href="../style.css">
 </head>
 <body>
   <div class="layout">
     <aside class="sidebar">
       <div class="sidebar-header">
-        <a href="../index.html" class="logo">TSM</a>
+        <a href="../index.html" class="logo">tsmetrics</a>
         <p class="sidebar-subtitle">TypeScript Static Analyzer</p>
       </div>
       <nav class="sidebar-nav">
@@ -83,8 +83,8 @@
         three trivial methods and no branching has WMC = 3.
       </p>
 
-      <h2>What TSM includes in WMC</h2>
-      <p>TSM sums the CC of the following method kinds:</p>
+      <h2>What tsmetrics includes in WMC</h2>
+      <p>tsmetrics sums the CC of the following method kinds:</p>
       <ul>
         <li>Regular instance and static methods (<code>method_definition</code>)</li>
         <li>Constructors</li>
@@ -107,7 +107,7 @@
         </tbody>
       </table>
       <div class="code-block">
-        <div class="code-block-header">tsm.yaml</div>
+        <div class="code-block-header">tsmetrics.yaml</div>
         <pre><span class="kw">thresholds</span>:
   <span class="kw">wmc</span>:
     <span class="str">warning</span>: <span class="num">15</span>

@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Maintainability Index — TSM Docs</title>
+  <title>Maintainability Index — tsmetrics Docs</title>
   <link rel="stylesheet" href="../style.css">
 </head>
 <body>
@@ -11,7 +11,7 @@
     
     <aside class="sidebar">
       <div class="sidebar-header">
-        <a href="../index.html" class="logo">TSM</a>
+        <a href="../index.html" class="logo">tsmetrics</a>
         <p class="sidebar-subtitle">TypeScript Static Analyzer</p>
       </div>
       <nav class="sidebar-nav">
@@ -80,7 +80,7 @@
       <p>The Maintainability Index (MI) provides a single numeric estimate of how easy a function is to maintain. Higher values (→100) indicate clean, simple code; lower values (→0) indicate complex, difficult-to-maintain code.</p>
       <p>MI was originally proposed by Oman and Hagemeister (1991) and later adopted by Microsoft as the Visual Studio variant used here — normalized to the 0–100 range.</p>
 
-      <h2>How it's calculated in TSM</h2>
+      <h2>How it's calculated in tsmetrics</h2>
       <ol>
         <li>Compute <a href="halstead.html">Halstead Volume</a> for the function (from the AST)</li>
         <li>Compute <a href="cyclomatic.html">Cyclomatic Complexity</a> for the function</li>

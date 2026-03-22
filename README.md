@@ -1,4 +1,4 @@
-# TSM — TypeScript Static Analyzer
+# tsmetrics — TypeScript Static Analyzer
 
 **Fast, tree-sitter-powered static analysis for TypeScript and TSX.**
 
@@ -11,7 +11,7 @@
 
 ## What it does
 
-TSM parses your TypeScript/TSX files and computes 25+ quality metrics in parallel:
+tsmetrics parses your TypeScript/TSX files and computes 25+ quality metrics in parallel:
 
 - **Function metrics** — cyclomatic complexity, LOC, nesting depth, Halstead volume, Maintainability Index, closure depth
 - **Class metrics** — WMC, DIT, TCC, CBO, RFC, NOI, NOM, WOC
@@ -26,16 +26,16 @@ git clone https://github.com/gabrielrf97/tsm.git && cd tsm
 cargo install --path .
 
 # Analyze a directory
-ts-static-analyzer analyze ./src
+tsmetrics analyze ./src
 
 # HTML report
-ts-static-analyzer analyze ./src --format html > report.html
+tsmetrics analyze ./src --format html > report.html
 
 # JSON for CI
-ts-static-analyzer analyze ./src --format json > metrics.json
+tsmetrics analyze ./src --format json > metrics.json
 
 # Exclude test files
-ts-static-analyzer analyze ./src --exclude "**/*.test.ts"
+tsmetrics analyze ./src --exclude "**/*.test.ts"
 ```
 
 ## Sample output
@@ -58,7 +58,7 @@ Complexity is color-coded: green (&lt;5), yellow (5–9), red (≥10).
 
 ## Configuration
 
-Drop a `tsm.yaml` in your project root:
+Drop a `tsmetrics.yaml` in your project root:
 
 ```yaml
 exclude:

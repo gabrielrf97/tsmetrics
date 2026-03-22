@@ -3,9 +3,9 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Closure Depth — TSM Docs</title>
+  <title>Closure Depth — tsmetrics Docs</title>
   <meta name="description" content="Closure Depth measures how deeply functions are nested inside other functions — a proxy for callback hell.">
-  <meta property="og:title" content="Closure Depth — TSM">
+  <meta property="og:title" content="Closure Depth — tsmetrics">
   <meta property="og:description" content="Measures maximum function nesting depth — detects callback hell.">
   <meta property="og:type" content="website">
   <meta property="og:url" content="https://gabrielrf97.github.io/tsm/metrics/closure-depth.html">
@@ -15,7 +15,7 @@
   <div class="layout">
     <aside class="sidebar">
       <div class="sidebar-header">
-        <a href="../index.html" class="logo">TSM</a>
+        <a href="../index.html" class="logo">tsmetrics</a>
         <p class="sidebar-subtitle">TypeScript Static Analyzer</p>
       </div>
       <nav class="sidebar-nav">
@@ -88,7 +88,7 @@
       <p>High closure depth is a classic sign of <em>callback hell</em> — deeply nested asynchronous callbacks that are hard to read, test, and reason about.</p>
 
       <h2>How it's computed</h2>
-      <p>TSM walks the AST and increments a depth counter each time it enters a function node (<code>function_declaration</code>, <code>function_expression</code>, <code>arrow_function</code>, or <code>method_definition</code>). The maximum depth seen in the file is reported.</p>
+      <p>tsmetrics walks the AST and increments a depth counter each time it enters a function node (<code>function_declaration</code>, <code>function_expression</code>, <code>arrow_function</code>, or <code>method_definition</code>). The maximum depth seen in the file is reported.</p>
 
       <div class="formula">
 depth(node) = 1 + max(depth(child) for child in function_children(node))

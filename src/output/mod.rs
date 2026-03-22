@@ -553,11 +553,11 @@ pub fn build_html(result: &AnalysisResult) -> String {
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>TSM Analysis Report</title>
+<title>tsmetrics Analysis Report</title>
 {css}
 </head>
 <body>
-<h1>TSM Analysis Report</h1>
+<h1>tsmetrics Analysis Report</h1>
 <p class="summary">Analyzed <strong>{total_files}</strong> file(s) &mdash; <strong>{total_functions}</strong> function(s) &mdash; <strong>{total_loc}</strong> LOC total</p>
 
 <h2>Functions</h2>
