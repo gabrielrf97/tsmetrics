@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 "use strict";
 
-const { execFileSync } = require("child_process");
+const { spawnSync } = require("child_process");
 const path = require("path");
 const fs = require("fs");
 
@@ -57,11 +57,12 @@ function run() {
     process.exit(1);
   }
 
-  try {
-    execFileSync(bin, process.argv.slice(2), { stdio: "inherit" });
-  } catch (err) {
-    // execFileSync throws with status when the child exits non-zero
-    process.exit(err.status ?? 1);
+  const result = spawnSync(bin, process.argv.slice(2), { stdio: "inherit" });
+  if (result.signal) {
+    // Child was killed by a signal — re-raise it so the parent sees the signal
+    process.kill(process.pid, result.signal);
+  } else {
+    process.exit(result.status ?? 1);
   }
 }
 

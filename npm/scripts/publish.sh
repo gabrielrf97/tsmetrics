@@ -37,24 +37,24 @@ echo "Stamping version ${VERSION} into package.json files..."
 
 for dir in "${PLATFORM_DIRS[@]}"; do
   PKG="${REPO_ROOT}/npm/${dir}/package.json"
-  node -e "
+  TSM_PKG_PATH="${PKG}" TSM_VERSION="${VERSION}" node -e "
     const fs = require('fs');
-    const pkg = JSON.parse(fs.readFileSync('${PKG}', 'utf8'));
-    pkg.version = '${VERSION}';
-    fs.writeFileSync('${PKG}', JSON.stringify(pkg, null, 2) + '\n');
+    const pkg = JSON.parse(fs.readFileSync(process.env.TSM_PKG_PATH, 'utf8'));
+    pkg.version = process.env.TSM_VERSION;
+    fs.writeFileSync(process.env.TSM_PKG_PATH, JSON.stringify(pkg, null, 2) + '\n');
   "
   echo "  ✓ npm/${dir}/package.json"
 done
 
 UMBRELLA_PKG="${REPO_ROOT}/npm/tsm-cli/package.json"
-node -e "
+TSM_PKG_PATH="${UMBRELLA_PKG}" TSM_VERSION="${VERSION}" node -e "
   const fs = require('fs');
-  const pkg = JSON.parse(fs.readFileSync('${UMBRELLA_PKG}', 'utf8'));
-  pkg.version = '${VERSION}';
+  const pkg = JSON.parse(fs.readFileSync(process.env.TSM_PKG_PATH, 'utf8'));
+  pkg.version = process.env.TSM_VERSION;
   for (const dep of Object.keys(pkg.optionalDependencies)) {
-    pkg.optionalDependencies[dep] = '${VERSION}';
+    pkg.optionalDependencies[dep] = process.env.TSM_VERSION;
   }
-  fs.writeFileSync('${UMBRELLA_PKG}', JSON.stringify(pkg, null, 2) + '\n');
+  fs.writeFileSync(process.env.TSM_PKG_PATH, JSON.stringify(pkg, null, 2) + '\n');
 "
 echo "  ✓ npm/tsm-cli/package.json"
 echo ""
@@ -82,6 +82,19 @@ if [[ "${MISSING}" -eq 1 ]]; then
   echo "Build them with: cargo build --release (or use cross for cross-compilation)"
   exit 1
 fi
+echo ""
+
+# ── Ensure Unix binaries are executable ───────────────────────────────────────
+echo "Setting executable bit on Unix binaries..."
+for dir in "${PLATFORM_DIRS[@]}"; do
+  if [[ "${dir}" != "win32-x64" ]]; then
+    BIN="${REPO_ROOT}/npm/${dir}/bin/tsm"
+    if [[ -f "${BIN}" ]]; then
+      chmod +x "${BIN}"
+      echo "  ✓ chmod +x npm/${dir}/bin/tsm"
+    fi
+  fi
+done
 echo ""
 
 # ── Publish platform packages first ───────────────────────────────────────────
