@@ -1,0 +1,53 @@
+RELEASE FIX — v0.1.0 Workflow Failure
+======================================
+
+Run: https://github.com/gabrielrf97/tsmetrics/actions/runs/23417686991
+Date: 2026-03-23
+
+ROOT CAUSE
+----------
+The "Publish npm packages" job failed with:
+
+  npm error 404 Not Found - PUT https://registry.npmjs.org/@tsmetrics%2fdarwin-arm64 - Scope not found
+  npm error 404  '@tsmetrics/darwin-arm64@0.1.0' is not in this registry.
+
+The npm scope/organization `@tsmetrics` does not exist on npmjs.com.
+All five platform packages (`@tsmetrics/darwin-arm64`, `@tsmetrics/darwin-x64`,
+`@tsmetrics/linux-x64`, `@tsmetrics/linux-arm64`, `@tsmetrics/win32-x64`) and
+the umbrella package (`tsmetrics`) are ready and correctly structured, but npm
+rejects the publish because the `@tsmetrics` scope has never been created.
+
+WHAT WORKED
+-----------
+- All 5 build jobs succeeded (binaries compiled for every target platform).
+- Artifact upload/download worked correctly.
+- Version stamping and binary staging worked.
+- The workflow structure and secrets wiring are correct.
+
+WHAT FAILED
+-----------
+- First `npm publish` call (darwin-arm64) returned HTTP 404 "Scope not found".
+- All subsequent platform publishes and the umbrella publish were skipped.
+- The GitHub Release job was skipped because publish-npm failed.
+
+REQUIRED FIX (manual, one-time)
+--------------------------------
+1. Go to https://www.npmjs.com/org/create
+2. Create an organization named exactly: tsmetrics
+3. Invite the account whose NPM_TOKEN is stored in the repo secret to that org
+   with "Member" or "Owner" role, or generate a new Automation token from that org.
+4. Update the `NPM_TOKEN` secret in
+   https://github.com/gabrielrf97/tsmetrics/settings/secrets/actions
+   if the new token differs from the current one.
+
+RETRIGGER AFTER FIX
+--------------------
+Once the npm org exists and NPM_TOKEN is valid, retrigger the release by
+deleting and recreating the v0.1.0 tag:
+
+  git tag -d v0.1.0
+  git push origin :refs/tags/v0.1.0
+  git tag v0.1.0
+  git push origin v0.1.0
+
+The workflow file (.github/workflows/release.yml) does NOT need any changes.
