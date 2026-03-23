@@ -18,16 +18,13 @@
   "bin": {
     "tsmetrics": "bin/tsmetrics.js"
   },
-  "files": [
-    "bin/"
-  ],
-  "optionalDependencies": {
-    "@tsmetrics/darwin-arm64": "0.1.0",
-    "@tsmetrics/darwin-x64": "0.1.0",
-    "@tsmetrics/linux-x64": "0.1.0",
-    "@tsmetrics/linux-arm64": "0.1.0",
-    "@tsmetrics/win32-x64": "0.1.0"
+  "scripts": {
+    "postinstall": "node install.js"
   },
+  "files": [
+    "bin/tsmetrics.js",
+    "install.js"
+  ],
   "engines": {
     "node": ">=14"
   }
