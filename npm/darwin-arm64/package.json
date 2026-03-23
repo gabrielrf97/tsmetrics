@@ -1,0 +1,18 @@
+{
+  "name": "@tsmetrics/darwin-arm64",
+  "version": "0.1.0",
+  "description": "macOS ARM64 binary for tsmetrics",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/gabrielrf97/tsmetrics.git"
+  },
+  "license": "MIT",
+  "os": ["darwin"],
+  "cpu": ["arm64"],
+  "files": [
+    "bin/"
+  ],
+  "bin": {
+    "tsmetrics": "bin/tsmetrics"
+  }
+}

@@ -1,0 +1,18 @@
+{
+  "name": "@tsmetrics/win32-x64",
+  "version": "0.1.0",
+  "description": "Windows x64 binary for tsmetrics",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/gabrielrf97/tsmetrics.git"
+  },
+  "license": "MIT",
+  "os": ["win32"],
+  "cpu": ["x64"],
+  "files": [
+    "bin/"
+  ],
+  "bin": {
+    "tsmetrics": "bin/tsmetrics.exe"
+  }
+}

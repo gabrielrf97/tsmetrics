@@ -1,0 +1,34 @@
+{
+  "name": "tsmetrics",
+  "version": "0.1.0",
+  "description": "Fast, tree-sitter-powered TypeScript static analyzer",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/gabrielrf97/tsmetrics.git"
+  },
+  "homepage": "https://gabrielrf97.github.io/tsmetrics/",
+  "license": "MIT",
+  "keywords": [
+    "typescript",
+    "static-analysis",
+    "metrics",
+    "linter",
+    "tree-sitter"
+  ],
+  "bin": {
+    "tsmetrics": "bin/tsmetrics.js"
+  },
+  "files": [
+    "bin/"
+  ],
+  "optionalDependencies": {
+    "@tsmetrics/darwin-arm64": "0.1.0",
+    "@tsmetrics/darwin-x64": "0.1.0",
+    "@tsmetrics/linux-x64": "0.1.0",
+    "@tsmetrics/linux-arm64": "0.1.0",
+    "@tsmetrics/win32-x64": "0.1.0"
+  },
+  "engines": {
+    "node": ">=14"
+  }
+}
