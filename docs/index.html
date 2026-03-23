@@ -93,11 +93,13 @@
 
       <h2>Quick Start</h2>
       <div class="quick-install">
-        <span class="prompt"># 1. Install</span><br>
+        <span class="prompt"># Option A — npm (no Rust required)</span><br>
+        npx tsmetrics analyze ./src<br><br>
+        <span class="prompt"># Option B — cargo (from source)</span><br>
         git clone https://github.com/gabrielrf97/tsmetrics &amp;&amp; cd tsmetrics &amp;&amp; cargo install --path .<br><br>
-        <span class="prompt"># 2. Run</span><br>
+        <span class="prompt"># Run an analysis</span><br>
         tsmetrics analyze ./src<br><br>
-        <span class="prompt"># 3. Export a report</span><br>
+        <span class="prompt"># Export a self-contained HTML report</span><br>
         tsmetrics analyze ./src --format html &gt; report.html
       </div>
 

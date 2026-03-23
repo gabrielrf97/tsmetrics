@@ -70,20 +70,28 @@
       </ul>
 
       <h2>Installation</h2>
-      <h3>Build from source</h3>
+      <h3>npm / npx (no Rust required)</h3>
+      <div class="code-block">
+        <div class="code-block-header">bash</div>
+        <pre><span class="cmt"># Run directly without installing</span>
+npx tsmetrics analyze ./src
+
+<span class="cmt"># Or install globally</span>
+npm install -g tsmetrics</pre>
+      </div>
+
+      <h3>Cargo (from source)</h3>
       <div class="code-block">
         <div class="code-block-header">bash</div>
         <pre>git clone https://github.com/gabrielrf97/tsmetrics.git
 cd tsmetrics
-cargo build --release
+cargo install --path .
+<span class="cmt"># Or build without installing: cargo build --release</span>
 <span class="cmt"># Binary at target/release/tsmetrics</span></pre>
       </div>
 
-      <h3>Install globally</h3>
-      <div class="code-block">
-        <div class="code-block-header">bash</div>
-        <pre>cargo install --path .</pre>
-      </div>
+      <h3>GitHub Releases</h3>
+      <p>Pre-built binaries for Linux, macOS, and Windows are available on the <a href="https://github.com/gabrielrf97/tsmetrics/releases">GitHub releases page</a>.</p>
 
       <h2>First Analysis</h2>
       <p>Point tsmetrics at a TypeScript file or directory:</p>
@@ -100,17 +108,42 @@ tsmetrics analyze src/ lib/ types/</pre>
       </div>
 
       <h3>Example output (table format)</h3>
-      <div class="output-block">Analyzed 3 file(s) — 12 function(s) — 340 LOC total
+      <p>Output is organized into three sections. The tables below are scrollable on narrow screens.</p>
 
-╒══════════════════════╤═══════════════╤══════╤═════╤══════╤════════════╤═════════╤════════╕
-│ File                 │ Function      │ Line │ LOC │ SLOC │ Complexity │ Nesting │ Params │
-╞══════════════════════╪═══════════════╪══════╪═════╪══════╪════════════╪═════════╪════════╡
-│ src/utils.ts         │ parseConfig   │    5 │  18 │   14 │          3 │       2 │      1 │
-│ src/utils.ts         │ validateInput │   24 │  32 │   26 │         11 │       4 │      2 │
-│ src/processor.ts     │ processData   │    8 │  55 │   47 │          8 │       3 │      3 │
-╘══════════════════════╧═══════════════╧══════╧═════╧══════╧════════════╧═════════╧════════╛</div>
+      <p><strong>Section 1 — Function Metrics</strong></p>
+      <div class="output-block" style="overflow-x:auto">Analyzed 4 file(s) — 33 function(s) — 289 LOC total
+
+=== Function Metrics ===
+┌──────────────────────────────┬───────────────┬──────┬─────┬──────┬────────────┬─────────┬────────┬─────┬──────┬──────┐
+│ File                         ┆ Function      ┆ Line ┆ LOC ┆ SLOC ┆ Complexity ┆ Nesting ┆ Params ┆ HV  ┆ MI   ┆ CDep │
+╞══════════════════════════════╪═══════════════╪══════╪═════╪══════╪════════════╪═════════╪════════╪═════╪══════╪══════╡
+│ src/utils.ts                 ┆ parseConfig   ┆    4 ┆  12 ┆   12 ┆          5 ┆       2 ┆      1 ┆ 220 ┆ 59.4 ┆    1 │
+│ src/utils.ts                 ┆ validateInput ┆   17 ┆  12 ┆   12 ┆         12 ┆       2 ┆      2 ┆ 375 ┆ 56.8 ┆    1 │
+│ src/processor.ts             ┆ processData   ┆    8 ┆  19 ┆   19 ┆          6 ┆       3 ┆      3 ┆ 291 ┆ 54.0 ┆    1 │
+└──────────────────────────────┴───────────────┴──────┴─────┴──────┴────────────┴─────────┴────────┴─────┴──────┴──────┘</div>
+
+      <p><strong>Section 2 — React / FP Component Metrics</strong></p>
+      <div class="output-block" style="overflow-x:auto">=== React / FP Component Metrics ===
+┌──────────────────────────────┬───────────┬──────┬───────┬─────────┬────────────┬─────────────┬───────────┬──────┐
+│ File                         ┆ Component ┆ Line ┆ Hooks ┆ Effects ┆ EffDensity ┆ RenderCmplx ┆ PropDrill ┆ CRS  │
+╞══════════════════════════════╪═══════════╪══════╪═══════╪═════════╪════════════╪═════════════╪═══════════╪══════╡
+│ src/components/UserCard.tsx  ┆ UserCard  ┆   51 ┆     4 ┆       1 ┆      0.059 ┆           0 ┆         0 ┆  8.0 │
+│ src/components/Dashboard.tsx ┆ Dashboard ┆   72 ┆     8 ┆       2 ┆      0.062 ┆           0 ┆         0 ┆ 19.0 │
+└──────────────────────────────┴───────────┴──────┴───────┴─────────┴────────────┴─────────────┴───────────┴──────┘</div>
+
+      <p><strong>Section 3 — File Metrics</strong></p>
+      <div class="output-block" style="overflow-x:auto">=== File Metrics ===
+┌──────────────────────────────┬─────┬──────┬─────┬─────────┬──────────┬────────────┬──────────┬────────┬─────────────┐
+│ File                         ┆ LOC ┆ SLOC ┆ Fns ┆ Classes ┆ TechDebt ┆ TD/100SLOC ┆ Cohesion ┆ FanOut ┆ PureFnRatio │
+╞══════════════════════════════╪═════╪══════╪═════╪═════════╪══════════╪════════════╪══════════╪════════╪═════════════╡
+│ src/utils.ts                 ┆  60 ┆   50 ┆   2 ┆       0 ┆    12.40 ┆      24.80 ┆     0.85 ┆      2 ┆        0.50 │
+│ src/processor.ts             ┆ 107 ┆   93 ┆  19 ┆       0 ┆    53.78 ┆      57.83 ┆     0.10 ┆      1 ┆        0.63 │
+│ src/components/UserCard.tsx  ┆  42 ┆   37 ┆   4 ┆       0 ┆    15.30 ┆      41.35 ┆     0.50 ┆      1 ┆        0.25 │
+│ src/components/Dashboard.tsx ┆  80 ┆   68 ┆   8 ┆       0 ┆    38.92 ┆      57.24 ┆     0.20 ┆      2 ┆        0.25 │
+└──────────────────────────────┴─────┴──────┴─────┴─────────┴──────────┴────────────┴──────────┴────────┴─────────────┘</div>
 
       <h2>Understanding the output</h2>
+      <h3>Function Metrics</h3>
       <table class="threshold-table">
         <thead><tr><th>Column</th><th>Description</th></tr></thead>
         <tbody>
@@ -119,9 +152,41 @@ tsmetrics analyze src/ lib/ types/</pre>
           <tr><td><strong>Line</strong></td><td>1-based line number where the function is declared</td></tr>
           <tr><td><strong>LOC</strong></td><td>Lines of Code (including blank and comment lines)</td></tr>
           <tr><td><strong>SLOC</strong></td><td>Source Lines of Code (blank and comment lines excluded)</td></tr>
-          <tr><td><strong>Complexity</strong></td><td>Cyclomatic Complexity — color-coded green/yellow/red</td></tr>
+          <tr><td><strong>Complexity</strong></td><td>Cyclomatic Complexity — color-coded green (&lt;5) / yellow (5–9) / red (≥10)</td></tr>
           <tr><td><strong>Nesting</strong></td><td>Maximum nesting depth</td></tr>
           <tr><td><strong>Params</strong></td><td>Number of formal parameters</td></tr>
+          <tr><td><strong>HV</strong></td><td>Halstead Volume — token-based size estimate</td></tr>
+          <tr><td><strong>MI</strong></td><td>Maintainability Index (0–100, higher is better)</td></tr>
+          <tr><td><strong>CDep</strong></td><td>Closure Depth — maximum callback/closure nesting level</td></tr>
+        </tbody>
+      </table>
+
+      <h3>React / FP Component Metrics</h3>
+      <table class="threshold-table">
+        <thead><tr><th>Column</th><th>Description</th></tr></thead>
+        <tbody>
+          <tr><td><strong>Component</strong></td><td>React component or FP function name</td></tr>
+          <tr><td><strong>Hooks</strong></td><td>Total hook calls (useState, useEffect, custom hooks, etc.)</td></tr>
+          <tr><td><strong>Effects</strong></td><td>Number of useEffect / useLayoutEffect calls</td></tr>
+          <tr><td><strong>EffDensity</strong></td><td>Effects per SLOC — how effect-heavy the component is</td></tr>
+          <tr><td><strong>RenderCmplx</strong></td><td>Render complexity — conditional branches in JSX</td></tr>
+          <tr><td><strong>PropDrill</strong></td><td>Prop drilling depth — levels of prop passing through intermediaries</td></tr>
+          <tr><td><strong>CRS</strong></td><td>Component Responsibility Score — composite size/complexity signal</td></tr>
+        </tbody>
+      </table>
+
+      <h3>File Metrics</h3>
+      <table class="threshold-table">
+        <thead><tr><th>Column</th><th>Description</th></tr></thead>
+        <tbody>
+          <tr><td><strong>LOC / SLOC</strong></td><td>Total lines / source lines in the file</td></tr>
+          <tr><td><strong>Fns</strong></td><td>Number of functions (including anonymous)</td></tr>
+          <tr><td><strong>Classes</strong></td><td>Number of class declarations</td></tr>
+          <tr><td><strong>TechDebt</strong></td><td>Aggregate technical debt score</td></tr>
+          <tr><td><strong>TD/100SLOC</strong></td><td>Technical debt normalized per 100 source lines</td></tr>
+          <tr><td><strong>Cohesion</strong></td><td>Module cohesion (0–1, higher is better)</td></tr>
+          <tr><td><strong>FanOut</strong></td><td>Number of distinct external modules imported</td></tr>
+          <tr><td><strong>PureFnRatio</strong></td><td>Fraction of functions with no side effects (0–1)</td></tr>
         </tbody>
       </table>
 
