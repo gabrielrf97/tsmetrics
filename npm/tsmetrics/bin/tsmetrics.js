@@ -7,14 +7,14 @@ const fs = require("fs");
 
 // Map from Node's process.platform + process.arch to npm package names
 const PLATFORM_MAP = {
-  "darwin-arm64": "@tsm-cli/darwin-arm64",
-  "darwin-x64": "@tsm-cli/darwin-x64",
-  "linux-x64": "@tsm-cli/linux-x64",
-  "linux-arm64": "@tsm-cli/linux-arm64",
-  "win32-x64": "@tsm-cli/win32-x64",
+  "darwin-arm64": "@tsmetrics/darwin-arm64",
+  "darwin-x64": "@tsmetrics/darwin-x64",
+  "linux-x64": "@tsmetrics/linux-x64",
+  "linux-arm64": "@tsmetrics/linux-arm64",
+  "win32-x64": "@tsmetrics/win32-x64",
 };
 
-const BINARY_NAME = process.platform === "win32" ? "tsm.exe" : "tsm";
+const BINARY_NAME = process.platform === "win32" ? "tsmetrics.exe" : "tsmetrics";
 
 function getBinaryPath() {
   const key = `${process.platform}-${process.arch}`;
@@ -47,12 +47,12 @@ function run() {
     const key = `${process.platform}-${process.arch}`;
     const supported = Object.keys(PLATFORM_MAP).join(", ");
     console.error(
-      `tsm: unsupported platform "${key}".\n` +
+      `tsmetrics: unsupported platform "${key}".\n` +
         `Supported platforms: ${supported}\n\n` +
         `If you are on a supported platform, try reinstalling:\n` +
-        `  npm install -g tsm-cli\n\n` +
+        `  npm install -g tsmetrics\n\n` +
         `Or build from source:\n` +
-        `  cargo install --git https://github.com/gabrielrf97/tsm`
+        `  cargo install --git https://github.com/gabrielrf97/tsmetrics`
     );
     process.exit(1);
   }

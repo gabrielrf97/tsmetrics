@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Manual npm publish script for tsm-cli packages.
+# Manual npm publish script for tsmetrics packages.
 #
 # Usage:
 #   ./npm/scripts/publish.sh <version>
@@ -27,7 +27,7 @@ fi
 # Strip leading 'v' if present
 VERSION="${VERSION#v}"
 
-echo "Publishing tsm-cli v${VERSION} to npm..."
+echo "Publishing tsmetrics v${VERSION} to npm..."
 echo ""
 
 PLATFORM_DIRS=(darwin-arm64 darwin-x64 linux-x64 linux-arm64 win32-x64)
@@ -46,7 +46,7 @@ for dir in "${PLATFORM_DIRS[@]}"; do
   echo "  ✓ npm/${dir}/package.json"
 done
 
-UMBRELLA_PKG="${REPO_ROOT}/npm/tsm-cli/package.json"
+UMBRELLA_PKG="${REPO_ROOT}/npm/tsmetrics/package.json"
 TSM_PKG_PATH="${UMBRELLA_PKG}" TSM_VERSION="${VERSION}" node -e "
   const fs = require('fs');
   const pkg = JSON.parse(fs.readFileSync(process.env.TSM_PKG_PATH, 'utf8'));
@@ -56,7 +56,7 @@ TSM_PKG_PATH="${UMBRELLA_PKG}" TSM_VERSION="${VERSION}" node -e "
   }
   fs.writeFileSync(process.env.TSM_PKG_PATH, JSON.stringify(pkg, null, 2) + '\n');
 "
-echo "  ✓ npm/tsm-cli/package.json"
+echo "  ✓ npm/tsmetrics/package.json"
 echo ""
 
 # ── Verify binaries exist ──────────────────────────────────────────────────────
@@ -64,9 +64,9 @@ echo "Checking binaries..."
 MISSING=0
 for dir in "${PLATFORM_DIRS[@]}"; do
   if [[ "${dir}" == "win32-x64" ]]; then
-    BIN="${REPO_ROOT}/npm/${dir}/bin/tsm.exe"
+    BIN="${REPO_ROOT}/npm/${dir}/bin/tsmetrics.exe"
   else
-    BIN="${REPO_ROOT}/npm/${dir}/bin/tsm"
+    BIN="${REPO_ROOT}/npm/${dir}/bin/tsmetrics"
   fi
   if [[ ! -f "${BIN}" ]]; then
     echo "  ✗ MISSING: npm/${dir}/bin/$(basename "${BIN}")"
@@ -88,10 +88,10 @@ echo ""
 echo "Setting executable bit on Unix binaries..."
 for dir in "${PLATFORM_DIRS[@]}"; do
   if [[ "${dir}" != "win32-x64" ]]; then
-    BIN="${REPO_ROOT}/npm/${dir}/bin/tsm"
+    BIN="${REPO_ROOT}/npm/${dir}/bin/tsmetrics"
     if [[ -f "${BIN}" ]]; then
       chmod +x "${BIN}"
-      echo "  ✓ chmod +x npm/${dir}/bin/tsm"
+      echo "  ✓ chmod +x npm/${dir}/bin/tsmetrics"
     fi
   fi
 done
@@ -100,18 +100,18 @@ echo ""
 # ── Publish platform packages first ───────────────────────────────────────────
 echo "Publishing platform packages..."
 for dir in "${PLATFORM_DIRS[@]}"; do
-  echo "  → @tsm-cli/${dir}"
+  echo "  → @tsmetrics/${dir}"
   (cd "${REPO_ROOT}/npm/${dir}" && npm publish --access public)
 done
 echo ""
 
 # ── Publish umbrella package ───────────────────────────────────────────────────
-echo "Publishing umbrella package tsm-cli..."
-(cd "${REPO_ROOT}/npm/tsm-cli" && npm publish --access public)
+echo "Publishing umbrella package tsmetrics..."
+(cd "${REPO_ROOT}/npm/tsmetrics" && npm publish --access public)
 echo ""
 
-echo "Done! tsm-cli@${VERSION} is now on npm."
+echo "Done! tsmetrics@${VERSION} is now on npm."
 echo ""
 echo "Users can install it with:"
-echo "  npm install -g tsm-cli"
-echo "  npx tsm-cli analyze ./src"
+echo "  npm install -g tsmetrics"
+echo "  npx tsmetrics analyze ./src"

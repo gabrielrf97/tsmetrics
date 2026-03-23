@@ -1,10 +1,10 @@
 {
-  "name": "@tsm-cli/darwin-x64",
+  "name": "@tsmetrics/darwin-x64",
   "version": "0.1.0",
-  "description": "macOS x64 binary for tsm-cli",
+  "description": "macOS x64 binary for tsmetrics",
   "repository": {
     "type": "git",
-    "url": "https://github.com/gabrielrf97/tsm.git"
+    "url": "https://github.com/gabrielrf97/tsmetrics.git"
   },
   "license": "MIT",
   "os": ["darwin"],
@@ -13,6 +13,6 @@
     "bin/"
   ],
   "bin": {
-    "tsm": "bin/tsm"
+    "tsmetrics": "bin/tsmetrics"
   }
 }

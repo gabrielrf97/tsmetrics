@@ -58,15 +58,15 @@ jobs:
         if: runner.os != 'Windows'
         run: |
           mkdir -p npm/${{ matrix.npm_dir }}/bin
-          cp target/${{ matrix.target }}/release/tsm npm/${{ matrix.npm_dir }}/bin/tsm
-          chmod +x npm/${{ matrix.npm_dir }}/bin/tsm
+          cp target/${{ matrix.target }}/release/tsmetrics npm/${{ matrix.npm_dir }}/bin/tsmetrics
+          chmod +x npm/${{ matrix.npm_dir }}/bin/tsmetrics
 
       - name: Prepare binary (Windows)
         if: runner.os == 'Windows'
         shell: pwsh
         run: |
           New-Item -ItemType Directory -Force -Path npm/${{ matrix.npm_dir }}/bin
-          Copy-Item target/${{ matrix.target }}/release/tsm.exe npm/${{ matrix.npm_dir }}/bin/tsm.exe
+          Copy-Item target/${{ matrix.target }}/release/tsmetrics.exe npm/${{ matrix.npm_dir }}/bin/tsmetrics.exe
 
       - name: Upload binary artifact
         uses: actions/upload-artifact@v4
@@ -108,7 +108,7 @@ jobs:
             mkdir -p npm/${dir}/bin
             cp -r artifacts/binary-${dir}/. npm/${dir}/bin/
             # Ensure Unix binaries are executable
-            chmod +x npm/${dir}/bin/tsm 2>/dev/null || true
+            chmod +x npm/${dir}/bin/tsmetrics 2>/dev/null || true
           done
 
       # Stamp version into every package.json
@@ -127,7 +127,7 @@ jobs:
           done
           node -e "
             const fs = require('fs');
-            const p = 'npm/tsm-cli/package.json';
+            const p = 'npm/tsmetrics/package.json';
             const pkg = JSON.parse(fs.readFileSync(p, 'utf8'));
             pkg.version = process.env.VERSION;
             for (const dep of Object.keys(pkg.optionalDependencies)) {
@@ -151,7 +151,7 @@ jobs:
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
         run: |
-          cd npm/tsm-cli
+          cd npm/tsmetrics
           npm publish --access public
 
   # ─── GitHub Release ──────────────────────────────────────────────────────────
@@ -177,24 +177,24 @@ jobs:
           VERSION=${GITHUB_REF_NAME}
 
           # darwin-arm64
-          tar -czf release-assets/tsm-${VERSION}-darwin-arm64.tar.gz \
-            -C artifacts/binary-darwin-arm64 tsm
+          tar -czf release-assets/tsmetrics-${VERSION}-darwin-arm64.tar.gz \
+            -C artifacts/binary-darwin-arm64 tsmetrics
 
           # darwin-x64
-          tar -czf release-assets/tsm-${VERSION}-darwin-x64.tar.gz \
-            -C artifacts/binary-darwin-x64 tsm
+          tar -czf release-assets/tsmetrics-${VERSION}-darwin-x64.tar.gz \
+            -C artifacts/binary-darwin-x64 tsmetrics
 
           # linux-x64
-          tar -czf release-assets/tsm-${VERSION}-linux-x64.tar.gz \
-            -C artifacts/binary-linux-x64 tsm
+          tar -czf release-assets/tsmetrics-${VERSION}-linux-x64.tar.gz \
+            -C artifacts/binary-linux-x64 tsmetrics
 
           # linux-arm64
-          tar -czf release-assets/tsm-${VERSION}-linux-arm64.tar.gz \
-            -C artifacts/binary-linux-arm64 tsm
+          tar -czf release-assets/tsmetrics-${VERSION}-linux-arm64.tar.gz \
+            -C artifacts/binary-linux-arm64 tsmetrics
 
           # win32-x64 (zip)
           cd artifacts/binary-win32-x64
-          zip ../../release-assets/tsm-${VERSION}-win32-x64.zip tsm.exe
+          zip ../../release-assets/tsmetrics-${VERSION}-win32-x64.zip tsmetrics.exe
           cd ../..
 
       - name: Create GitHub Release
