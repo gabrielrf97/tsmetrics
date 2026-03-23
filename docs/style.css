@@ -50,7 +50,7 @@ a:hover { text-decoration: underline; }
 .nav-section a.active { color: #a78bfa; border-left-color: #7c3aed; background: rgba(124,58,237,0.1); }
 
 /* Content */
-.content { flex: 1; min-width: 0; max-width: 860px; padding: 2rem 2.5rem; }
+.content { width: 100%; max-width: 860px; margin: 0 auto; padding: 2rem 2.5rem; }
 
 /* Breadcrumb */
 .breadcrumb {
@@ -189,8 +189,8 @@ code {
 /* Hero */
 .hero {
   background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
-  color: #fff; padding: 3rem 2.5rem; margin: -2rem -2.5rem 2rem;
-  border-radius: 0 0 12px 12px;
+  color: #fff; padding: 3rem 2.5rem; margin-bottom: 2rem;
+  border-radius: 12px;
 }
 .hero h1 { font-size: 2.4rem; font-weight: 800; color: #fff; line-height: 1.2; margin-bottom: 0.75rem; }
 .hero .tagline { font-size: 1.1rem; color: #94a3b8; max-width: 540px; margin-bottom: 1.5rem; }
@@ -233,7 +233,7 @@ code {
   .layout { flex-direction: column; }
   .sidebar { width: 100%; height: auto; position: relative; }
   .content { padding: 1.25rem; }
-  .hero { padding: 2rem 1.25rem; margin: -1.25rem -1.25rem 1.5rem; }
+  .hero { padding: 2rem 1.25rem; margin-bottom: 1.5rem; border-radius: 8px; }
   .hero h1 { font-size: 1.8rem; }
   .page-nav { flex-direction: column; }
   .page-nav a { max-width: 100%; }
