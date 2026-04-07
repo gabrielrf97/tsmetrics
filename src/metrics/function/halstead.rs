@@ -19,6 +19,18 @@
 use std::collections::HashMap;
 use tree_sitter::{Node, Parser};
 
+/// JSX structural node kinds to skip entirely (including subtrees) when
+/// computing filtered Halstead metrics. These inflate volume artificially
+/// for React components.
+const JSX_SKIP_KINDS: &[&str] = &[
+    "jsx_opening_element",
+    "jsx_closing_element",
+    "jsx_self_closing_element",
+    "jsx_attribute",
+    "jsx_namespace_name",
+    "jsx_text",
+];
+
 // ── token classification ─────────────────────────────────────────────────────
 
 /// Anonymous leaf-node kinds that count as **operators**.
@@ -144,7 +156,19 @@ pub struct FunctionHalstead {
 pub fn compute_for_node(node: Node, source: &[u8]) -> HalsteadMetrics {
     let mut operators: HashMap<String, usize> = HashMap::new();
     let mut operands: HashMap<String, usize> = HashMap::new();
-    walk(node, source, &mut operators, &mut operands, 0);
+    walk(node, source, &mut operators, &mut operands, 0, false);
+    HalsteadMetrics::from_maps(&operators, &operands)
+}
+
+/// Compute Halstead metrics for `node` with JSX structural tokens filtered out.
+///
+/// JSX markup (opening/closing elements, attributes, text) is skipped, but
+/// logic inside `{...}` expressions is preserved. This gives a more accurate
+/// Halstead Volume for React components where JSX markup inflates the metric.
+pub fn compute_for_node_filtered(node: Node, source: &[u8]) -> HalsteadMetrics {
+    let mut operators: HashMap<String, usize> = HashMap::new();
+    let mut operands: HashMap<String, usize> = HashMap::new();
+    walk(node, source, &mut operators, &mut operands, 0, true);
     HalsteadMetrics::from_maps(&operators, &operands)
 }
 
@@ -185,20 +209,93 @@ fn is_function_node(node: Node<'_>) -> bool {
         )
 }
 
+/// Extract a function name, inferring from parent context when no direct name exists.
+fn extract_halstead_function_name(node: Node, source: &[u8]) -> String {
+    // 1. Direct name field (function_declaration, method_definition)
+    if let Some(name_node) = node.child_by_field_name("name") {
+        return name_node.utf8_text(source).unwrap_or("<anonymous>").to_string();
+    }
+
+    // 2. Infer from parent context
+    if let Some(name) = infer_halstead_name_from_parent(node, source) {
+        return name;
+    }
+
+    "<anonymous>".to_string()
+}
+
+fn infer_halstead_name_from_parent(node: Node, source: &[u8]) -> Option<String> {
+    let parent = node.parent()?;
+    match parent.kind() {
+        "variable_declarator" | "public_field_definition" => {
+            parent.child_by_field_name("name")
+                .and_then(|n| n.utf8_text(source).ok())
+                .map(|s| s.to_string())
+        }
+        "pair" => {
+            parent.child_by_field_name("key")
+                .and_then(|n| n.utf8_text(source).ok())
+                .map(|s| s.to_string())
+        }
+        "assignment_expression" => {
+            let left = parent.child_by_field_name("left")?;
+            if left.kind() == "member_expression" {
+                left.child_by_field_name("property")
+                    .and_then(|n| n.utf8_text(source).ok())
+                    .map(|s| s.to_string())
+            } else {
+                left.utf8_text(source).ok().map(|s| s.to_string())
+            }
+        }
+        "arguments" => {
+            let call = parent.parent()?;
+            if call.kind() != "call_expression" {
+                return None;
+            }
+            let mut idx = 0usize;
+            let mut cursor = parent.walk();
+            for child in parent.named_children(&mut cursor) {
+                if child.id() == node.id() {
+                    break;
+                }
+                idx += 1;
+            }
+            let func_node = call.child_by_field_name("function")?;
+            let callee = match func_node.kind() {
+                "member_expression" => {
+                    let obj = func_node.child_by_field_name("object")
+                        .and_then(|n| n.utf8_text(source).ok())
+                        .unwrap_or("?");
+                    let prop = func_node.child_by_field_name("property")
+                        .and_then(|n| n.utf8_text(source).ok())
+                        .unwrap_or("?");
+                    format!("{obj}.{prop}")
+                }
+                _ => func_node.utf8_text(source).ok()?.to_string(),
+            };
+            Some(format!("{callee}[callback@{idx}]"))
+        }
+        "export_statement" => {
+            Some("<default export>".to_string())
+        }
+        "as_expression" | "type_assertion" | "satisfies_expression"
+        | "parenthesized_expression" | "non_null_expression" => {
+            infer_halstead_name_from_parent(parent, source)
+        }
+        _ => None,
+    }
+}
+
 /// Collect one `FunctionHalstead` per function node, then recurse into
 /// siblings/children but **not** into nested function bodies (they become
 /// their own entries).
 fn collect_functions(node: Node<'_>, source: &[u8], results: &mut Vec<FunctionHalstead>) {
     if is_function_node(node) {
-        let name = node
-            .child_by_field_name("name")
-            .and_then(|n| n.utf8_text(source).ok())
-            .unwrap_or("<anonymous>")
-            .to_string();
+        let name = extract_halstead_function_name(node, source);
 
         let mut operators: HashMap<String, usize> = HashMap::new();
         let mut operands: HashMap<String, usize> = HashMap::new();
-        walk(node, source, &mut operators, &mut operands, 0);
+        walk(node, source, &mut operators, &mut operands, 0, false);
 
         results.push(FunctionHalstead {
             name,
@@ -230,6 +327,7 @@ fn walk(
     operators: &mut HashMap<String, usize>,
     operands: &mut HashMap<String, usize>,
     depth: usize,
+    filter_jsx: bool,
 ) {
     let kind = node.kind();
 
@@ -237,6 +335,34 @@ fn walk(
     // the root function; a new named function node would be a separate scope).
     if depth > 0 && is_function_node(node) {
         return;
+    }
+
+    // ── JSX filtering ───────────────────────────────────────────────────────
+    if filter_jsx {
+        // jsx_element / jsx_fragment: skip the node itself but recurse into
+        // children so that jsx_expression children (real logic) are counted.
+        if kind == "jsx_element" || kind == "jsx_fragment" {
+            let mut cursor = node.walk();
+            for child in node.children(&mut cursor) {
+                walk(child, source, operators, operands, depth + 1, true);
+            }
+            return;
+        }
+
+        // Structural JSX nodes: skip the entire subtree.
+        if JSX_SKIP_KINDS.contains(&kind) {
+            return;
+        }
+
+        // jsx_expression: the `{` and `}` delimiters are structural, but the
+        // expression inside is logic — skip the node itself, recurse children.
+        if kind == "jsx_expression" {
+            let mut cursor = node.walk();
+            for child in node.children(&mut cursor) {
+                walk(child, source, operators, operands, depth + 1, true);
+            }
+            return;
+        }
     }
 
     // Operator — anonymous leaf token (e.g., "+", "return", "if").
@@ -255,7 +381,7 @@ fn walk(
     // Otherwise, recurse into children.
     let mut cursor = node.walk();
     for child in node.children(&mut cursor) {
-        walk(child, source, operators, operands, depth + 1);
+        walk(child, source, operators, operands, depth + 1, filter_jsx);
     }
 }
 
@@ -380,11 +506,11 @@ mod tests {
     }
 
     #[test]
-    fn arrow_function_anonymous_name() {
+    fn arrow_function_inferred_name_from_variable() {
         let src = "const fn = () => 42;";
         let results = compute(src);
         assert!(!results.is_empty());
-        assert_eq!(results[0].name, "<anonymous>");
+        assert_eq!(results[0].name, "fn");
     }
 
     // ── class methods ────────────────────────────────────────────────────────

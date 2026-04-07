@@ -16,6 +16,9 @@ pub struct FunctionMetrics {
     pub halstead_volume: f64,
     pub maintainability_index: f64,
     pub closure_depth: usize,
+    // JSX-filtered metrics
+    pub halstead_volume_logic: f64,
+    pub maintainability_index_logic: f64,
     // React / FP metrics
     pub hook_count: usize,
     pub effect_count: usize,
@@ -38,6 +41,8 @@ impl Default for FunctionMetrics {
             param_count: 0,
             halstead_volume: 0.0,
             maintainability_index: 100.0,
+            halstead_volume_logic: 0.0,
+            maintainability_index_logic: 100.0,
             closure_depth: 0,
             hook_count: 0,
             effect_count: 0,
@@ -108,6 +113,9 @@ pub struct FileMetrics {
     pub module_cohesion: f64,
     pub module_fan_out: usize,
     pub pure_fn_ratio: f64,
+    pub maintainability_index: f64,
+    pub is_tsx: bool,
+    pub maintainability_index_logic: f64,
 }
 
 impl Default for FileMetrics {
@@ -126,6 +134,9 @@ impl Default for FileMetrics {
             module_cohesion: 1.0,
             module_fan_out: 0,
             pure_fn_ratio: 1.0,
+            maintainability_index: 100.0,
+            is_tsx: false,
+            maintainability_index_logic: 100.0,
         }
     }
 }

@@ -47,6 +47,10 @@ fn collect_functions(node: Node, source: &[u8], file_path: &str, out: &mut Vec<F
         // Maintainability Index from the pre-computed inputs
         let mi = maintainability::maintainability_index(&name, hv, cc, loc_val).mi;
 
+        // JSX-filtered Halstead volume and logic-only Maintainability Index
+        let hv_logic = halstead::compute_for_node_filtered(node, source);
+        let mi_logic_result = maintainability::maintainability_index(&name, hv_logic.volume, cc, loc_val);
+
         // Closure depth (max nesting of closures within this function)
         let cdepth = closure_depth::max_closure_depth(node);
 
@@ -75,6 +79,8 @@ fn collect_functions(node: Node, source: &[u8], file_path: &str, out: &mut Vec<F
             param_count: params::param_count(node),
             halstead_volume: hv,
             maintainability_index: mi,
+            halstead_volume_logic: hv_logic.volume,
+            maintainability_index_logic: mi_logic_result.mi,
             closure_depth: cdepth,
             hook_count: hook_cx.hook_count,
             effect_count: effect_count_val,
@@ -93,25 +99,84 @@ fn collect_functions(node: Node, source: &[u8], file_path: &str, out: &mut Vec<F
 }
 
 fn extract_function_name(node: Node, source: &[u8]) -> String {
-    // function_declaration / method_definition have a direct `name` field.
+    // 1. Direct name field (function_declaration, method_definition)
     if let Some(name_node) = node.child_by_field_name("name") {
         return name_node.utf8_text(source).unwrap_or("<anonymous>").to_string();
     }
 
-    // For expressions assigned to variables, object keys, or class fields,
-    // look at the parent node for the name.
-    if let Some(parent) = node.parent() {
-        let name_field = match parent.kind() {
-            "variable_declarator" | "public_field_definition" | "assignment_expression" => {
-                parent.child_by_field_name("name")
-            }
-            "pair" => parent.child_by_field_name("key"),
-            _ => None,
-        };
-        if let Some(n) = name_field {
-            return n.utf8_text(source).unwrap_or("<anonymous>").to_string();
-        }
+    // 2. Infer from parent context
+    if let Some(name) = infer_name_from_parent(node, source) {
+        return name;
     }
 
     "<anonymous>".to_string()
+}
+
+fn infer_name_from_parent(node: Node, source: &[u8]) -> Option<String> {
+    let parent = node.parent()?;
+    match parent.kind() {
+        "variable_declarator" | "public_field_definition" => {
+            parent.child_by_field_name("name")
+                .and_then(|n| n.utf8_text(source).ok())
+                .map(|s| s.to_string())
+        }
+        "pair" => {
+            parent.child_by_field_name("key")
+                .and_then(|n| n.utf8_text(source).ok())
+                .map(|s| s.to_string())
+        }
+        "assignment_expression" => {
+            let left = parent.child_by_field_name("left")?;
+            if left.kind() == "member_expression" {
+                left.child_by_field_name("property")
+                    .and_then(|n| n.utf8_text(source).ok())
+                    .map(|s| s.to_string())
+            } else {
+                left.utf8_text(source).ok().map(|s| s.to_string())
+            }
+        }
+        "arguments" => {
+            infer_callback_name(node, parent, source)
+        }
+        "export_statement" => {
+            Some("<default export>".to_string())
+        }
+        "as_expression" | "type_assertion" | "satisfies_expression"
+        | "parenthesized_expression" | "non_null_expression" => {
+            infer_name_from_parent(parent, source)
+        }
+        _ => None,
+    }
+}
+
+fn infer_callback_name(fn_node: Node, args_node: Node, source: &[u8]) -> Option<String> {
+    let call = args_node.parent()?;
+    if call.kind() != "call_expression" {
+        return None;
+    }
+
+    let mut idx = 0usize;
+    let mut cursor = args_node.walk();
+    for child in args_node.named_children(&mut cursor) {
+        if child.id() == fn_node.id() {
+            break;
+        }
+        idx += 1;
+    }
+
+    let func_node = call.child_by_field_name("function")?;
+    let callee = match func_node.kind() {
+        "member_expression" => {
+            let obj = func_node.child_by_field_name("object")
+                .and_then(|n| n.utf8_text(source).ok())
+                .unwrap_or("?");
+            let prop = func_node.child_by_field_name("property")
+                .and_then(|n| n.utf8_text(source).ok())
+                .unwrap_or("?");
+            format!("{obj}.{prop}")
+        }
+        _ => func_node.utf8_text(source).ok()?.to_string(),
+    };
+
+    Some(format!("{callee}[callback@{idx}]"))
 }

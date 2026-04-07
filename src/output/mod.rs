@@ -25,9 +25,10 @@ fn render_table(result: &AnalysisResult) {
     } else {
         // ── Core function metrics ────────────────────────────────────────────
         println!("=== Function Metrics ===");
+        let has_tsx = result.files.iter().any(|f| f.is_tsx);
         let mut table = Table::new();
         table.load_preset(UTF8_FULL);
-        table.set_header(vec![
+        let mut header = vec![
             Cell::new("File").fg(Color::Cyan),
             Cell::new("Function").fg(Color::Cyan),
             Cell::new("Line").fg(Color::Cyan),
@@ -39,7 +40,12 @@ fn render_table(result: &AnalysisResult) {
             Cell::new("HV").fg(Color::Cyan),
             Cell::new("MI").fg(Color::Cyan),
             Cell::new("CDep").fg(Color::Cyan),
-        ]);
+        ];
+        if has_tsx {
+            header.push(Cell::new("HV(L)").fg(Color::Cyan));
+            header.push(Cell::new("MI(L)").fg(Color::Cyan));
+        }
+        table.set_header(header);
 
         let all_functions: Vec<&FunctionMetrics> =
             result.files.iter().flat_map(|f| &f.functions).collect();
@@ -61,7 +67,7 @@ fn render_table(result: &AnalysisResult) {
                 Cell::new(format!("{:.1}", func.maintainability_index)).fg(Color::Green)
             };
 
-            table.add_row(vec![
+            let mut row = vec![
                 Cell::new(&func.file),
                 Cell::new(&func.name),
                 Cell::new(func.line),
@@ -73,7 +79,19 @@ fn render_table(result: &AnalysisResult) {
                 Cell::new(format!("{:.0}", func.halstead_volume)),
                 mi_cell,
                 Cell::new(func.closure_depth),
-            ]);
+            ];
+            if has_tsx {
+                row.push(Cell::new(format!("{:.0}", func.halstead_volume_logic)));
+                let mi_logic_cell = if func.maintainability_index_logic < 50.0 {
+                    Cell::new(format!("{:.1}", func.maintainability_index_logic)).fg(Color::Red)
+                } else if func.maintainability_index_logic < 75.0 {
+                    Cell::new(format!("{:.1}", func.maintainability_index_logic)).fg(Color::Yellow)
+                } else {
+                    Cell::new(format!("{:.1}", func.maintainability_index_logic)).fg(Color::Green)
+                };
+                row.push(mi_logic_cell);
+            }
+            table.add_row(row);
         }
         println!("{table}");
 
@@ -185,8 +203,16 @@ fn render_table(result: &AnalysisResult) {
         Cell::new("Cohesion").fg(Color::Cyan),
         Cell::new("FanOut").fg(Color::Cyan),
         Cell::new("PureFnRatio").fg(Color::Cyan),
+        Cell::new("MI").fg(Color::Cyan),
     ]);
     for f in &result.files {
+        let mi_cell = if f.maintainability_index < 50.0 {
+            Cell::new(format!("{:.1}", f.maintainability_index)).fg(Color::Red)
+        } else if f.maintainability_index < 75.0 {
+            Cell::new(format!("{:.1}", f.maintainability_index)).fg(Color::Yellow)
+        } else {
+            Cell::new(format!("{:.1}", f.maintainability_index)).fg(Color::Green)
+        };
         ft.add_row(vec![
             Cell::new(&f.path),
             Cell::new(f.total_loc),
@@ -198,6 +224,7 @@ fn render_table(result: &AnalysisResult) {
             Cell::new(format!("{:.2}", f.module_cohesion)),
             Cell::new(f.module_fan_out),
             Cell::new(format!("{:.2}", f.pure_fn_ratio)),
+            mi_cell,
         ]);
     }
     println!("{ft}");
@@ -245,12 +272,12 @@ fn render_json(result: &AnalysisResult) -> Result<()> {
 
 pub fn build_csv(result: &AnalysisResult) -> String {
     let mut out = String::from(
-        "file,function,line,loc,sloc,complexity,nesting,params,halstead_volume,maintainability_index,closure_depth,hook_count,effect_count,effect_density,render_complexity,prop_drilling_depth,component_responsibility\n",
+        "file,function,line,loc,sloc,complexity,nesting,params,halstead_volume,maintainability_index,halstead_volume_logic,maintainability_index_logic,closure_depth,hook_count,effect_count,effect_density,render_complexity,prop_drilling_depth,component_responsibility\n",
     );
     for file in &result.files {
         for func in &file.functions {
             out.push_str(&format!(
-                "{},{},{},{},{},{},{},{},{:.2},{:.2},{},{},{},{:.4},{},{},{:.2}\n",
+                "{},{},{},{},{},{},{},{},{:.2},{:.2},{:.2},{:.2},{},{},{},{:.4},{},{},{:.2}\n",
                 csv_field(&func.file),
                 csv_field(&func.name),
                 func.line,
@@ -261,6 +288,8 @@ pub fn build_csv(result: &AnalysisResult) -> String {
                 func.param_count,
                 func.halstead_volume,
                 func.maintainability_index,
+                func.halstead_volume_logic,
+                func.maintainability_index_logic,
                 func.closure_depth,
                 func.hook_count,
                 func.effect_count,
@@ -328,16 +357,32 @@ pub fn build_html(result: &AnalysisResult) -> String {
     </script>"#;
 
     // ── Functions table ──────────────────────────────────────────────────────
+    let has_tsx_html = result.files.iter().any(|f| f.is_tsx);
+    let fn_colspan = if has_tsx_html { "13" } else { "11" };
     let mut functions_rows = String::new();
     let all_functions: Vec<_> = result.files.iter().flat_map(|f| &f.functions).collect();
     if all_functions.is_empty() {
-        functions_rows.push_str(r#"<tr><td class="empty" colspan="11">No functions found.</td></tr>"#);
+        functions_rows.push_str(&format!(r#"<tr><td class="empty" colspan="{fn_colspan}">No functions found.</td></tr>"#));
     } else {
         for func in &all_functions {
             let (badge_class, _) = complexity_badge(func.cyclomatic_complexity);
             let mi_class = if func.maintainability_index < 50.0 { "red" }
                           else if func.maintainability_index < 75.0 { "yellow" }
                           else { "green" };
+            let extra_cols = if has_tsx_html {
+                let mi_logic_class = if func.maintainability_index_logic < 50.0 { "red" }
+                                    else if func.maintainability_index_logic < 75.0 { "yellow" }
+                                    else { "green" };
+                format!(
+                    r#"
+                  <td data-val="{}">{:.0}</td>
+                  <td data-val="{}"><span class="badge {}">{:.1}</span></td>"#,
+                    func.halstead_volume_logic, func.halstead_volume_logic,
+                    func.maintainability_index_logic, mi_logic_class, func.maintainability_index_logic,
+                )
+            } else {
+                String::new()
+            };
             functions_rows.push_str(&format!(
                 r#"<tr>
                   <td>{}</td><td>{}</td>
@@ -349,7 +394,7 @@ pub fn build_html(result: &AnalysisResult) -> String {
                   <td data-val="{}">{}</td>
                   <td data-val="{}">{:.0}</td>
                   <td data-val="{}"><span class="badge {}">{:.1}</span></td>
-                  <td data-val="{}">{}</td>
+                  <td data-val="{}">{}</td>{extra_cols}
                 </tr>"#,
                 html_escape(&func.file), html_escape(&func.name),
                 func.line, func.line,
@@ -477,6 +522,9 @@ pub fn build_html(result: &AnalysisResult) -> String {
     // ── File metrics table ───────────────────────────────────────────────────
     let mut file_rows = String::new();
     for f in &result.files {
+        let mi_class = if f.maintainability_index < 50.0 { "red" }
+                       else if f.maintainability_index < 75.0 { "yellow" }
+                       else { "green" };
         file_rows.push_str(&format!(
             r#"<tr>
               <td>{}</td>
@@ -489,6 +537,7 @@ pub fn build_html(result: &AnalysisResult) -> String {
               <td data-val="{}">{:.2}</td>
               <td data-val="{}">{}</td>
               <td data-val="{}">{:.2}</td>
+              <td data-val="{}"><span class="badge {}">{:.1}</span></td>
             </tr>"#,
             html_escape(&f.path),
             f.total_loc, f.total_loc,
@@ -500,8 +549,20 @@ pub fn build_html(result: &AnalysisResult) -> String {
             f.module_cohesion, f.module_cohesion,
             f.module_fan_out, f.module_fan_out,
             f.pure_fn_ratio, f.pure_fn_ratio,
+            f.maintainability_index, mi_class, f.maintainability_index,
         ));
     }
+
+    // ── Extra function-table headers for TSX ───────────────────────────────
+    let fn_extra_headers = if has_tsx_html {
+        format!(
+            r#"
+    <th onclick="sortTable('ftable',11)">HV(L)</th>
+    <th onclick="sortTable('ftable',12)">MI(L)</th>"#
+        )
+    } else {
+        String::new()
+    };
 
     // ── Violations section ───────────────────────────────────────────────────
     let mut violations_section = String::new();
@@ -573,7 +634,7 @@ pub fn build_html(result: &AnalysisResult) -> String {
     <th onclick="sortTable('ftable',7)">Params</th>
     <th onclick="sortTable('ftable',8)">HV</th>
     <th onclick="sortTable('ftable',9)">MI</th>
-    <th onclick="sortTable('ftable',10)">CDep</th>
+    <th onclick="sortTable('ftable',10)">CDep</th>{fn_extra_headers}
   </tr></thead>
   <tbody>{functions_rows}</tbody>
 </table>
@@ -594,6 +655,7 @@ pub fn build_html(result: &AnalysisResult) -> String {
     <th onclick="sortTable('fmtable',7)">Cohesion</th>
     <th onclick="sortTable('fmtable',8)">FanOut</th>
     <th onclick="sortTable('fmtable',9)">PureFnRatio</th>
+    <th onclick="sortTable('fmtable',10)">MI</th>
   </tr></thead>
   <tbody>{file_rows}</tbody>
 </table>
@@ -607,6 +669,7 @@ pub fn build_html(result: &AnalysisResult) -> String {
         total_functions = result.total_functions,
         total_loc = result.total_loc,
         functions_rows = functions_rows,
+        fn_extra_headers = fn_extra_headers,
         react_section = react_section,
         classes_section = classes_section,
         file_rows = file_rows,

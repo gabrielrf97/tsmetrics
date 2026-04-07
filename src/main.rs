@@ -3,7 +3,7 @@ use clap::{Parser, Subcommand, ValueEnum};
 use std::path::PathBuf;
 use tsmetrics::{
     analyze,
-    config::{Config, OutputFormat},
+    config::{Config, OutputFormat, ThresholdOverrides},
 };
 
 #[derive(Parser, Debug)]
@@ -50,6 +50,47 @@ enum Commands {
         /// Use --exclude to add extra patterns on top of the defaults.
         #[arg(long = "exclude", short = 'e', num_args = 1)]
         exclude: Vec<String>,
+
+        /// Path to a config file (tsmetrics.yaml or package.json with tsmetrics key)
+        #[arg(long = "config", short = 'c')]
+        config_file: Option<PathBuf>,
+
+        /// Override cyclomatic complexity warning threshold
+        #[arg(long)]
+        cc_warning: Option<usize>,
+        /// Override cyclomatic complexity error threshold
+        #[arg(long)]
+        cc_error: Option<usize>,
+        /// Override lines-of-code warning threshold
+        #[arg(long)]
+        loc_warning: Option<usize>,
+        /// Override lines-of-code error threshold
+        #[arg(long)]
+        loc_error: Option<usize>,
+        /// Override nesting warning threshold
+        #[arg(long)]
+        nesting_warning: Option<usize>,
+        /// Override nesting error threshold
+        #[arg(long)]
+        nesting_error: Option<usize>,
+        /// Override params warning threshold
+        #[arg(long)]
+        params_warning: Option<usize>,
+        /// Override params error threshold
+        #[arg(long)]
+        params_error: Option<usize>,
+        /// Override weighted methods per class warning threshold
+        #[arg(long)]
+        wmc_warning: Option<usize>,
+        /// Override weighted methods per class error threshold
+        #[arg(long)]
+        wmc_error: Option<usize>,
+        /// Override number of implementations warning threshold
+        #[arg(long)]
+        noi_warning: Option<usize>,
+        /// Override number of implementations error threshold
+        #[arg(long)]
+        noi_error: Option<usize>,
     },
 }
 
@@ -73,6 +114,19 @@ fn main() -> Result<()> {
             min_loc,
             timing,
             exclude,
+            config_file,
+            cc_warning,
+            cc_error,
+            loc_warning,
+            loc_error,
+            nesting_warning,
+            nesting_error,
+            params_warning,
+            params_error,
+            wmc_warning,
+            wmc_error,
+            noi_warning,
+            noi_error,
         } => {
             let output_format = match format {
                 Format::Table => OutputFormat::Table,
@@ -88,6 +142,21 @@ fn main() -> Result<()> {
             config.min_loc = min_loc;
             config.timing = timing;
             config.exclude = exclude;
+            config.config_file = config_file;
+            config.threshold_overrides = ThresholdOverrides {
+                cc_warning,
+                cc_error,
+                loc_warning,
+                loc_error,
+                nesting_warning,
+                nesting_error,
+                params_warning,
+                params_error,
+                wmc_warning,
+                wmc_error,
+                noi_warning,
+                noi_error,
+            };
 
             if verbose {
                 eprintln!("Running analysis...");

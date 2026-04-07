@@ -17,16 +17,26 @@ use std::time::Instant;
 
 use config::Config;
 use structs::AnalysisResult;
-use thresholds::{check_class_violations, check_function_violations, load_tsmetrics_config};
+use thresholds::{
+    apply_cli_overrides, check_class_violations, check_function_violations,
+    load_tsmetrics_config, load_tsmetrics_config_from_path,
+};
 
 /// Run analysis over all TypeScript files found in the configured paths.
 pub fn analyze(config: &Config) -> Result<AnalysisResult> {
-    // Load tsmetrics.yaml config (thresholds + exclude patterns)
-    let cwd = std::env::current_dir().unwrap_or_default();
-    let mut search_dirs: Vec<&std::path::Path> = vec![cwd.as_path()];
-    let path_refs: Vec<&std::path::Path> = config.paths.iter().map(|p| p.as_path()).collect();
-    search_dirs.extend(path_refs.iter().copied());
-    let tsmetrics_config = load_tsmetrics_config(&search_dirs)?;
+    // Load tsmetrics config (thresholds + exclude patterns)
+    let mut tsmetrics_config = if let Some(ref config_path) = config.config_file {
+        load_tsmetrics_config_from_path(config_path)?
+    } else {
+        let cwd = std::env::current_dir().unwrap_or_default();
+        let mut search_dirs: Vec<&std::path::Path> = vec![cwd.as_path()];
+        let path_refs: Vec<&std::path::Path> = config.paths.iter().map(|p| p.as_path()).collect();
+        search_dirs.extend(path_refs.iter().copied());
+        load_tsmetrics_config(&search_dirs)?
+    };
+
+    // Apply CLI threshold overrides (highest precedence)
+    apply_cli_overrides(&mut tsmetrics_config.thresholds, &config.threshold_overrides)?;
     let thresholds_config = tsmetrics_config.thresholds;
 
     // Merge: YAML excludes + CLI excludes (DEFAULT_EXCLUDES already applied in collect_ts_files)

@@ -1,5 +1,15 @@
 use serde::{Deserialize, Serialize};
-use std::path::Path;
+use std::path::{Path, PathBuf};
+
+use crate::config::ThresholdOverrides;
+
+const CONFIG_FILENAMES: &[&str] = &[
+    "tsmetrics.yaml",
+    "tsmetrics.yml",
+    ".tsmetricsrc.yaml",
+    ".tsmetricsrc.yml",
+    ".tsmetricsrc",
+];
 
 /// Per-metric warning/error threshold pair.
 #[derive(Debug, Clone, Deserialize, Serialize, PartialEq)]
@@ -133,19 +143,124 @@ fn merge_threshold(
     Ok(merged)
 }
 
-/// Load combined configuration (thresholds + exclude patterns) from tsmetrics.yaml.
+/// Walk upward from `start_dir` checking all CONFIG_FILENAMES plus package.json at each level.
+/// Returns the first config file found, or `None` after `max_levels` parent directories.
+fn find_config_file(start_dir: &Path) -> Option<PathBuf> {
+    const MAX_LEVELS: usize = 64;
+    let mut dir = start_dir.to_path_buf();
+    for _ in 0..MAX_LEVELS {
+        // Check all standalone config filenames first
+        for &filename in CONFIG_FILENAMES {
+            let candidate = dir.join(filename);
+            if candidate.exists() {
+                return Some(candidate);
+            }
+        }
+        // Then check package.json for a "tsmetrics" key
+        let pkg_json = dir.join("package.json");
+        if pkg_json.exists() {
+            if let Ok(content) = std::fs::read_to_string(&pkg_json) {
+                if let Ok(val) = serde_json::from_str::<serde_json::Value>(&content) {
+                    if val.get("tsmetrics").is_some() {
+                        return Some(pkg_json);
+                    }
+                }
+            }
+        }
+        if !dir.pop() {
+            break;
+        }
+    }
+    None
+}
+
+/// Load config from a `package.json` that contains a `"tsmetrics"` key.
+fn load_config_from_package_json(path: &Path) -> anyhow::Result<TsmetricsConfig> {
+    let content = std::fs::read_to_string(path)?;
+    let val: serde_json::Value = serde_json::from_str(&content)
+        .map_err(|e| anyhow::anyhow!("Failed to parse {}: {}", path.display(), e))?;
+    let tsmetrics_val = val
+        .get("tsmetrics")
+        .ok_or_else(|| anyhow::anyhow!("No \"tsmetrics\" key in {}", path.display()))?;
+    let yaml: TsmetricsYaml = serde_json::from_value(tsmetrics_val.clone())
+        .map_err(|e| anyhow::anyhow!("Failed to deserialize tsmetrics config from {}: {}", path.display(), e))?;
+    let defaults = ThresholdsConfig::default();
+    Ok(TsmetricsConfig {
+        thresholds: ThresholdsConfig {
+            cyclomatic_complexity: merge_threshold(
+                yaml.thresholds.cyclomatic_complexity,
+                defaults.cyclomatic_complexity,
+            )?,
+            loc: merge_threshold(yaml.thresholds.loc, defaults.loc)?,
+            nesting: merge_threshold(yaml.thresholds.nesting, defaults.nesting)?,
+            params: merge_threshold(yaml.thresholds.params, defaults.params)?,
+            wmc: merge_threshold(yaml.thresholds.wmc, defaults.wmc)?,
+            noi: merge_threshold(yaml.thresholds.noi, defaults.noi)?,
+        },
+        exclude: yaml.exclude,
+    })
+}
+
+/// Load combined configuration (thresholds + exclude patterns) from a config file.
+/// Searches given directories (and their parents) for config files.
 /// Falls back to defaults if no file is found.
 pub fn load_tsmetrics_config(search_dirs: &[&Path]) -> anyhow::Result<TsmetricsConfig> {
     for &dir in search_dirs {
-        let candidate = dir.join("tsmetrics.yaml");
-        if candidate.exists() {
-            return load_tsmetrics_config_from_file(&candidate);
+        if let Some(found) = find_config_file(dir) {
+            if found.file_name().map_or(false, |f| f == "package.json") {
+                return load_config_from_package_json(&found);
+            }
+            return load_tsmetrics_config_from_file(&found);
         }
     }
     Ok(TsmetricsConfig {
         thresholds: ThresholdsConfig::default(),
         exclude: Vec::new(),
     })
+}
+
+/// Load config from an explicit path (for the --config flag).
+pub fn load_tsmetrics_config_from_path(path: &Path) -> anyhow::Result<TsmetricsConfig> {
+    if !path.exists() {
+        anyhow::bail!("Config file not found: {}", path.display());
+    }
+    if path.file_name().map_or(false, |f| f == "package.json") {
+        return load_config_from_package_json(path);
+    }
+    load_tsmetrics_config_from_file(path)
+}
+
+/// Apply CLI threshold overrides on top of loaded config.
+/// Re-validates that warning <= error after each override.
+pub fn apply_cli_overrides(
+    config: &mut ThresholdsConfig,
+    overrides: &ThresholdOverrides,
+) -> anyhow::Result<()> {
+    macro_rules! apply {
+        ($field:ident, $warn:ident, $err:ident, $name:expr) => {
+            if let Some(v) = overrides.$warn {
+                config.$field.warning = v;
+            }
+            if let Some(v) = overrides.$err {
+                config.$field.error = v;
+            }
+            if config.$field.warning > config.$field.error {
+                anyhow::bail!(
+                    "invalid {} threshold after CLI overrides: warning ({}) > error ({})",
+                    $name,
+                    config.$field.warning,
+                    config.$field.error
+                );
+            }
+        };
+    }
+    apply!(cyclomatic_complexity, cc_warning, cc_error, "cyclomatic_complexity");
+    apply!(loc, loc_warning, loc_error, "loc");
+    apply!(nesting, nesting_warning, nesting_error, "nesting");
+    apply!(params, params_warning, params_error, "params");
+    apply!(wmc, wmc_warning, wmc_error, "wmc");
+    apply!(noi, noi_warning, noi_error, "noi");
+    Ok(())
 }
 
 fn load_tsmetrics_config_from_file(path: &Path) -> anyhow::Result<TsmetricsConfig> {

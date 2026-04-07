@@ -88,6 +88,36 @@ pub fn compute_file_metrics(root: Node, source: &[u8], path: &str) -> FileMetric
     let total_loc  = root.end_position().row + 1;
     let total_sloc = count_sloc_str(source_str);
 
+    let is_tsx = path.ends_with(".tsx");
+
+    let maintainability_index = if functions.is_empty() {
+        100.0
+    } else {
+        let total_fn_loc: usize = functions.iter().map(|f| f.loc.max(1)).sum();
+        if total_fn_loc == 0 {
+            100.0
+        } else {
+            functions.iter()
+                .map(|f| f.maintainability_index * f.loc.max(1) as f64)
+                .sum::<f64>()
+                / total_fn_loc as f64
+        }
+    };
+
+    // File-level logic MI: LOC-weighted average of function MI(L) values
+    let maintainability_index_logic = {
+        let total_weight: usize = functions.iter().map(|f| f.loc.max(1)).sum();
+        if total_weight > 0 {
+            let weighted_sum: f64 = functions
+                .iter()
+                .map(|f| f.maintainability_index_logic * f.loc.max(1) as f64)
+                .sum();
+            weighted_sum / total_weight as f64
+        } else {
+            100.0
+        }
+    };
+
     FileMetrics {
         path: path.to_string(),
         total_loc,
@@ -102,5 +132,8 @@ pub fn compute_file_metrics(root: Node, source: &[u8], path: &str) -> FileMetric
         module_cohesion: cohesion.mc,
         module_fan_out: coupling.fan_out,
         pure_fn_ratio: purity.ratio,
+        maintainability_index,
+        is_tsx,
+        maintainability_index_logic,
     }
 }
