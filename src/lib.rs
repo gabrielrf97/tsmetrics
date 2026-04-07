@@ -49,6 +49,9 @@ pub fn analyze(config: &Config) -> Result<AnalysisResult> {
     } else {
         config.paths.clone()
     };
+    if effective_paths.is_empty() {
+        anyhow::bail!("No paths to analyze. Provide paths as arguments or in a config file.");
+    }
     let files = utils::collect_ts_files(&effective_paths, &extra_excludes);
     let verbose = config.verbose;
 

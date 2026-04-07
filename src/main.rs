@@ -21,8 +21,7 @@ struct Cli {
 enum Commands {
     /// Analyze TypeScript/TSX files or directories
     Analyze {
-        /// Paths to files or directories to analyze
-        #[arg(required = true)]
+        /// Paths to files or directories to analyze (optional if paths are in config file)
         paths: Vec<PathBuf>,
 
         /// Output format
