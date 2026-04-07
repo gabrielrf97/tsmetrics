@@ -15,6 +15,10 @@ pub struct ThresholdOverrides {
     pub wmc_error: Option<usize>,
     pub noi_warning: Option<usize>,
     pub noi_error: Option<usize>,
+    pub mi_warning: Option<f64>,
+    pub mi_error: Option<f64>,
+    pub hv_warning: Option<f64>,
+    pub hv_error: Option<f64>,
 }
 
 #[derive(Debug, Clone)]

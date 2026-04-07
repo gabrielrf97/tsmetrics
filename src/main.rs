@@ -91,6 +91,18 @@ enum Commands {
         /// Override number of implementations error threshold
         #[arg(long)]
         noi_error: Option<usize>,
+        /// Override maintainability index warning threshold (lower MI is worse)
+        #[arg(long)]
+        mi_warning: Option<f64>,
+        /// Override maintainability index error threshold (lower MI is worse)
+        #[arg(long)]
+        mi_error: Option<f64>,
+        /// Override Halstead volume warning threshold
+        #[arg(long)]
+        hv_warning: Option<f64>,
+        /// Override Halstead volume error threshold
+        #[arg(long)]
+        hv_error: Option<f64>,
     },
 }
 
@@ -127,6 +139,10 @@ fn main() -> Result<()> {
             wmc_error,
             noi_warning,
             noi_error,
+            mi_warning,
+            mi_error,
+            hv_warning,
+            hv_error,
         } => {
             let output_format = match format {
                 Format::Table => OutputFormat::Table,
@@ -156,6 +172,10 @@ fn main() -> Result<()> {
                 wmc_error,
                 noi_warning,
                 noi_error,
+                mi_warning,
+                mi_error,
+                hv_warning,
+                hv_error,
             };
 
             if verbose {

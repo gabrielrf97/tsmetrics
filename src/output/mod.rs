@@ -4,6 +4,14 @@ use crate::thresholds::Severity;
 use anyhow::Result;
 use comfy_table::{presets::UTF8_FULL, Cell, Color, Table};
 
+fn format_metric_value(v: f64) -> String {
+    if v.fract() == 0.0 && v.abs() < (i64::MAX as f64) {
+        format!("{}", v as i64)
+    } else {
+        format!("{:.2}", v)
+    }
+}
+
 pub fn render(result: &AnalysisResult, format: &OutputFormat) -> Result<()> {
     match format {
         OutputFormat::Table => render_table(result),
@@ -256,8 +264,8 @@ fn render_table(result: &AnalysisResult) {
                 Cell::new(&v.entity),
                 Cell::new(v.line),
                 Cell::new(&v.metric),
-                Cell::new(v.value),
-                Cell::new(v.threshold),
+                Cell::new(format_metric_value(v.value)),
+                Cell::new(format_metric_value(v.threshold)),
                 severity_cell,
             ]);
         }
@@ -585,8 +593,8 @@ pub fn build_html(result: &AnalysisResult) -> String {
                 html_escape(&v.file), html_escape(&v.entity),
                 v.line, v.line,
                 html_escape(&v.metric),
-                v.value, v.value,
-                v.threshold, v.threshold,
+                format_metric_value(v.value), format_metric_value(v.value),
+                format_metric_value(v.threshold), format_metric_value(v.threshold),
                 sev_class, sev_label,
             ));
         }
@@ -780,8 +788,8 @@ mod tests {
                 entity: "complex".to_string(),
                 line: 1,
                 metric: "cyclomatic_complexity".to_string(),
-                value: 15,
-                threshold: 10,
+                value: 15.0,
+                threshold: 10.0,
                 severity: Severity::Error,
             },
             Violation {
@@ -789,8 +797,8 @@ mod tests {
                 entity: "moderate".to_string(),
                 line: 5,
                 metric: "cyclomatic_complexity".to_string(),
-                value: 6,
-                threshold: 5,
+                value: 6.0,
+                threshold: 5.0,
                 severity: Severity::Warning,
             },
         ]);

@@ -43,7 +43,13 @@ pub fn analyze(config: &Config) -> Result<AnalysisResult> {
     let mut extra_excludes: Vec<String> = tsmetrics_config.exclude;
     extra_excludes.extend(config.exclude.iter().cloned());
 
-    let files = utils::collect_ts_files(&config.paths, &extra_excludes);
+    // Merge paths: CLI paths take precedence; fall back to config file paths
+    let effective_paths = if config.paths.is_empty() && !tsmetrics_config.paths.is_empty() {
+        tsmetrics_config.paths
+    } else {
+        config.paths.clone()
+    };
+    let files = utils::collect_ts_files(&effective_paths, &extra_excludes);
     let verbose = config.verbose;
 
     let start = Instant::now();
@@ -95,6 +101,8 @@ pub fn analyze(config: &Config) -> Result<AnalysisResult> {
                 func.loc,
                 func.max_nesting,
                 func.param_count,
+                func.maintainability_index,
+                func.halstead_volume,
                 &thresholds_config,
             );
             result.add_violations(violations);
