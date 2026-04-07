@@ -180,3 +180,112 @@ fn infer_callback_name(fn_node: Node, args_node: Node, source: &[u8]) -> Option<
 
     Some(format!("{callee}[callback@{idx}]"))
 }
+
+// ── tests ────────────────────────────────────────────────────────────────────
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::parse::parse_typescript;
+
+    /// Helper: parse TypeScript source and return extracted function names.
+    fn function_names(src: &str) -> Vec<String> {
+        let tree = parse_typescript(src).expect("parse failed");
+        let fns = extract_functions(tree.root_node(), src.as_bytes(), "test.ts");
+        fns.into_iter().map(|f| f.name).collect()
+    }
+
+    /// Helper: parse and return the first function's name.
+    fn first_name(src: &str) -> String {
+        let names = function_names(src);
+        assert!(!names.is_empty(), "expected at least one function in: {src}");
+        names.into_iter().next().unwrap()
+    }
+
+    // ── basic named function ────────────────────────────────────────────────
+
+    #[test]
+    fn named_function_declaration() {
+        assert_eq!(first_name("function named() {}"), "named");
+    }
+
+    // ── variable declarator (const / let) ───────────────────────────────────
+
+    #[test]
+    fn const_arrow_function() {
+        assert_eq!(first_name("const handler = () => {}"), "handler");
+    }
+
+    #[test]
+    fn let_function_expression() {
+        assert_eq!(first_name("let handler = function() {}"), "handler");
+    }
+
+    // ── object property (pair) ──────────────────────────────────────────────
+
+    #[test]
+    fn object_property_arrow() {
+        let names = function_names("const obj = { onClick: () => {} }");
+        assert!(names.contains(&"onClick".to_string()),
+            "expected 'onClick' in {names:?}");
+    }
+
+    // ── assignment expression (member_expression) ───────────────────────────
+
+    #[test]
+    fn module_exports_assignment() {
+        assert_eq!(first_name("module.exports = () => {}"), "exports");
+    }
+
+    #[test]
+    fn this_member_assignment() {
+        // Wrap in a function so tree-sitter sees `this` in a valid context
+        let names = function_names("function init() { this.handler = () => {} }");
+        assert!(names.contains(&"handler".to_string()),
+            "expected 'handler' in {names:?}");
+    }
+
+    // ── export statement ────────────────────────────────────────────────────
+
+    #[test]
+    fn export_default_arrow() {
+        assert_eq!(first_name("export default () => {}"), "<default export>");
+    }
+
+    #[test]
+    fn export_const_arrow() {
+        let names = function_names("export const handler = () => {}");
+        assert!(names.contains(&"handler".to_string()),
+            "expected 'handler' in {names:?}");
+    }
+
+    // ── callback naming (arguments) ─────────────────────────────────────────
+
+    #[test]
+    fn settimeout_callback() {
+        let names = function_names("setTimeout(() => {}, 100)");
+        assert_eq!(names[0], "setTimeout[callback@0]");
+    }
+
+    #[test]
+    fn member_call_callback_at_index_1() {
+        let names = function_names("app.get('/path', () => {})");
+        assert!(names.contains(&"app.get[callback@1]".to_string()),
+            "expected 'app.get[callback@1]' in {names:?}");
+    }
+
+    // ── type assertion wrapper ──────────────────────────────────────────────
+
+    #[test]
+    fn type_assertion_wrapper() {
+        assert_eq!(first_name("const fn = (() => {}) as Handler"), "fn");
+    }
+
+    // ── truly anonymous ─────────────────────────────────────────────────────
+
+    #[test]
+    fn truly_anonymous_in_array() {
+        let names = function_names("[() => {}]");
+        assert_eq!(names[0], "<anonymous>");
+    }
+}

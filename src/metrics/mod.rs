@@ -37,6 +37,13 @@ fn count_nodes_of_kind(node: Node, kind: &str, count: &mut usize) {
     }
 }
 
+/// Helper used by tests: parse TypeScript source and compute file metrics.
+#[cfg(test)]
+fn parse_and_compute(source: &str, path: &str) -> FileMetrics {
+    let tree = crate::parse::parse_file(source, path).expect("parse failed");
+    compute_file_metrics(tree.root_node(), source.as_bytes(), path)
+}
+
 /// Compute all metrics for a parsed file.
 pub fn compute_file_metrics(root: Node, source: &[u8], path: &str) -> FileMetrics {
     let source_str = std::str::from_utf8(source).unwrap_or("");
@@ -135,5 +142,199 @@ pub fn compute_file_metrics(root: Node, source: &[u8], path: &str) -> FileMetric
         maintainability_index,
         is_tsx,
         maintainability_index_logic,
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use approx::assert_relative_eq;
+
+    const EPSILON: f64 = 0.01;
+
+    // ── 1. Empty file (no functions) => MI should be 100.0 ──────────────────
+
+    #[test]
+    fn empty_file_mi_is_100() {
+        let source = "";
+        let fm = parse_and_compute(source, "empty.ts");
+        assert_eq!(fm.function_count, 0);
+        assert_relative_eq!(fm.maintainability_index, 100.0, epsilon = EPSILON);
+    }
+
+    #[test]
+    fn file_with_only_imports_mi_is_100() {
+        let source = r#"
+            import { foo } from './foo';
+            import { bar } from './bar';
+            const x: number = 42;
+        "#;
+        let fm = parse_and_compute(source, "imports_only.ts");
+        assert_eq!(fm.function_count, 0);
+        assert_relative_eq!(fm.maintainability_index, 100.0, epsilon = EPSILON);
+    }
+
+    // ── 2. Single function => file MI equals that function's MI ─────────────
+
+    #[test]
+    fn single_function_file_mi_equals_function_mi() {
+        let source = r#"
+            function add(a: number, b: number): number {
+                return a + b;
+            }
+        "#;
+        let fm = parse_and_compute(source, "single.ts");
+        assert_eq!(fm.function_count, 1);
+        let fn_mi = fm.functions[0].maintainability_index;
+        assert_relative_eq!(fm.maintainability_index, fn_mi, epsilon = EPSILON);
+    }
+
+    #[test]
+    fn single_complex_function_file_mi_equals_function_mi() {
+        let source = r#"
+            function process(data: number[]): number {
+                let result = 0;
+                for (let i = 0; i < data.length; i++) {
+                    if (data[i] > 0) {
+                        result += data[i] * 2;
+                    } else if (data[i] < -10) {
+                        result -= data[i];
+                    } else {
+                        result += 1;
+                    }
+                }
+                return result;
+            }
+        "#;
+        let fm = parse_and_compute(source, "complex_single.ts");
+        assert_eq!(fm.function_count, 1);
+        let fn_mi = fm.functions[0].maintainability_index;
+        assert_relative_eq!(fm.maintainability_index, fn_mi, epsilon = EPSILON);
+    }
+
+    // ── 3. Multiple functions with different LOC => LOC-weighted average ─────
+
+    #[test]
+    fn multiple_functions_loc_weighted_average() {
+        // We create two functions with clearly different sizes.
+        // The large function should dominate the file-level MI.
+        let source = r#"
+            function tiny(x: number): number { return x; }
+
+            function large(data: number[]): number {
+                let result = 0;
+                for (let i = 0; i < data.length; i++) {
+                    if (data[i] > 0) {
+                        if (data[i] % 2 === 0) {
+                            result += data[i] * 2;
+                        } else if (data[i] % 3 === 0) {
+                            result += data[i] * 3;
+                        } else {
+                            result += data[i];
+                        }
+                    } else if (data[i] < -10) {
+                        result -= data[i];
+                    } else {
+                        result += data[i] > -5 ? data[i] * -1 : 0;
+                    }
+                }
+                return result;
+            }
+        "#;
+        let fm = parse_and_compute(source, "multi.ts");
+        assert_eq!(fm.function_count, 2);
+
+        let tiny = &fm.functions.iter().find(|f| f.name == "tiny").unwrap();
+        let large = &fm.functions.iter().find(|f| f.name == "large").unwrap();
+
+        // Manually compute expected LOC-weighted average
+        let tiny_loc = tiny.loc.max(1) as f64;
+        let large_loc = large.loc.max(1) as f64;
+        let expected_mi = (tiny.maintainability_index * tiny_loc
+            + large.maintainability_index * large_loc)
+            / (tiny_loc + large_loc);
+
+        assert_relative_eq!(fm.maintainability_index, expected_mi, epsilon = EPSILON);
+
+        // The file MI should be closer to large's MI since it has more LOC
+        let simple_avg = (tiny.maintainability_index + large.maintainability_index) / 2.0;
+        let diff_from_large = (fm.maintainability_index - large.maintainability_index).abs();
+        let diff_from_simple_avg = (fm.maintainability_index - simple_avg).abs();
+        assert!(
+            diff_from_large < diff_from_simple_avg,
+            "file MI ({:.2}) should be closer to the large function's MI ({:.2}) than the simple average ({:.2})",
+            fm.maintainability_index,
+            large.maintainability_index,
+            simple_avg
+        );
+    }
+
+    // ── 4. File with only trivial functions (LOC=1) ─────────────────────────
+
+    #[test]
+    fn trivial_one_line_functions_compute_correctly() {
+        let source = r#"
+            const a = () => 1;
+            const b = () => 2;
+            const c = () => 3;
+        "#;
+        let fm = parse_and_compute(source, "trivial.ts");
+        assert!(fm.function_count >= 3, "expected at least 3 functions, got {}", fm.function_count);
+
+        // All functions have LOC=1 (or very small), so the weighted average
+        // should be close to the simple average.
+        let total_weight: f64 = fm.functions.iter().map(|f| f.loc.max(1) as f64).sum();
+        let weighted_sum: f64 = fm.functions.iter()
+            .map(|f| f.maintainability_index * f.loc.max(1) as f64)
+            .sum();
+        let expected = weighted_sum / total_weight;
+
+        assert_relative_eq!(fm.maintainability_index, expected, epsilon = EPSILON);
+        // All trivial functions should have high MI, so file MI should be high
+        assert!(
+            fm.maintainability_index > 50.0,
+            "trivial functions should have reasonable MI, got {:.2}",
+            fm.maintainability_index
+        );
+    }
+
+    #[test]
+    fn trivial_functions_equal_loc_gives_simple_average() {
+        // When all functions have the same LOC, weighted average = simple average
+        let source = r#"
+            function f1(x: number): number { return x + 1; }
+            function f2(x: number): number { return x * 2; }
+        "#;
+        let fm = parse_and_compute(source, "equal_loc.ts");
+        assert_eq!(fm.function_count, 2);
+
+        // If both have same LOC, the file MI should be the simple average
+        if fm.functions[0].loc == fm.functions[1].loc {
+            let simple_avg = (fm.functions[0].maintainability_index
+                + fm.functions[1].maintainability_index) / 2.0;
+            assert_relative_eq!(fm.maintainability_index, simple_avg, epsilon = EPSILON);
+        }
+    }
+
+    // ── maintainability_index_logic follows same pattern ─────────────────────
+
+    #[test]
+    fn empty_file_mi_logic_is_100() {
+        let source = "";
+        let fm = parse_and_compute(source, "empty2.ts");
+        assert_relative_eq!(fm.maintainability_index_logic, 100.0, epsilon = EPSILON);
+    }
+
+    #[test]
+    fn single_function_file_mi_logic_equals_function_mi_logic() {
+        let source = r#"
+            function add(a: number, b: number): number {
+                return a + b;
+            }
+        "#;
+        let fm = parse_and_compute(source, "single_logic.ts");
+        assert_eq!(fm.function_count, 1);
+        let fn_mi_logic = fm.functions[0].maintainability_index_logic;
+        assert_relative_eq!(fm.maintainability_index_logic, fn_mi_logic, epsilon = EPSILON);
     }
 }

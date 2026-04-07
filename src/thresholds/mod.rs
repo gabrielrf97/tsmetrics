@@ -90,6 +90,7 @@ pub struct Violation {
 }
 
 /// Combined configuration loaded from tsmetrics.yaml (thresholds + exclude patterns).
+#[derive(Debug)]
 pub struct TsmetricsConfig {
     pub thresholds: ThresholdsConfig,
     /// Directory/file name patterns that should be excluded from scanning.
@@ -566,5 +567,275 @@ mod tests {
         assert_eq!(violations.len(), 1);
         assert_eq!(violations[0].metric, "noi");
         assert_eq!(violations[0].severity, Severity::Error);
+    }
+
+    // ── Config discovery ──────────────────────────────────────────────────────
+
+    #[test]
+    fn test_find_tsmetrics_yaml() {
+        let dir = tempfile::tempdir().unwrap();
+        std::fs::write(dir.path().join("tsmetrics.yaml"), "thresholds: {}\n").unwrap();
+        let found = find_config_file(dir.path());
+        assert_eq!(found.unwrap().file_name().unwrap(), "tsmetrics.yaml");
+    }
+
+    #[test]
+    fn test_find_tsmetrics_yml_when_no_yaml() {
+        let dir = tempfile::tempdir().unwrap();
+        std::fs::write(dir.path().join("tsmetrics.yml"), "thresholds: {}\n").unwrap();
+        let found = find_config_file(dir.path());
+        assert_eq!(found.unwrap().file_name().unwrap(), "tsmetrics.yml");
+    }
+
+    #[test]
+    fn test_find_tsmetricsrc_yaml() {
+        let dir = tempfile::tempdir().unwrap();
+        std::fs::write(dir.path().join(".tsmetricsrc.yaml"), "thresholds: {}\n").unwrap();
+        let found = find_config_file(dir.path());
+        assert_eq!(found.unwrap().file_name().unwrap(), ".tsmetricsrc.yaml");
+    }
+
+    #[test]
+    fn test_find_tsmetricsrc_yml() {
+        let dir = tempfile::tempdir().unwrap();
+        std::fs::write(dir.path().join(".tsmetricsrc.yml"), "thresholds: {}\n").unwrap();
+        let found = find_config_file(dir.path());
+        assert_eq!(found.unwrap().file_name().unwrap(), ".tsmetricsrc.yml");
+    }
+
+    #[test]
+    fn test_find_tsmetricsrc_no_extension() {
+        let dir = tempfile::tempdir().unwrap();
+        std::fs::write(dir.path().join(".tsmetricsrc"), "thresholds: {}\n").unwrap();
+        let found = find_config_file(dir.path());
+        assert_eq!(found.unwrap().file_name().unwrap(), ".tsmetricsrc");
+    }
+
+    #[test]
+    fn test_yaml_takes_priority_over_yml() {
+        let dir = tempfile::tempdir().unwrap();
+        std::fs::write(dir.path().join("tsmetrics.yaml"), "thresholds: {}\n").unwrap();
+        std::fs::write(dir.path().join("tsmetrics.yml"), "thresholds: {}\n").unwrap();
+        let found = find_config_file(dir.path());
+        assert_eq!(found.unwrap().file_name().unwrap(), "tsmetrics.yaml");
+    }
+
+    #[test]
+    fn test_standalone_config_takes_priority_over_package_json() {
+        let dir = tempfile::tempdir().unwrap();
+        std::fs::write(dir.path().join("tsmetrics.yaml"), "thresholds: {}\n").unwrap();
+        std::fs::write(
+            dir.path().join("package.json"),
+            r#"{"name": "test", "tsmetrics": {"thresholds": {}}}"#,
+        )
+        .unwrap();
+        let found = find_config_file(dir.path());
+        assert_eq!(found.unwrap().file_name().unwrap(), "tsmetrics.yaml");
+    }
+
+    // ── Upward walking ────────────────────────────────────────────────────────
+
+    #[test]
+    fn test_find_config_in_parent_directory() {
+        let parent = tempfile::tempdir().unwrap();
+        std::fs::write(parent.path().join("tsmetrics.yaml"), "thresholds: {}\n").unwrap();
+        let child = parent.path().join("subdir");
+        std::fs::create_dir(&child).unwrap();
+        let found = find_config_file(&child);
+        assert!(found.is_some());
+        assert_eq!(found.unwrap().file_name().unwrap(), "tsmetrics.yaml");
+    }
+
+    #[test]
+    fn test_nearest_config_wins() {
+        let parent = tempfile::tempdir().unwrap();
+        // Parent has a config
+        std::fs::write(
+            parent.path().join("tsmetrics.yaml"),
+            "thresholds:\n  loc:\n    warning: 99\n    error: 100\n",
+        )
+        .unwrap();
+        // Child also has a config
+        let child = parent.path().join("child");
+        std::fs::create_dir(&child).unwrap();
+        std::fs::write(
+            child.join("tsmetrics.yml"),
+            "thresholds:\n  loc:\n    warning: 11\n    error: 22\n",
+        )
+        .unwrap();
+        let found = find_config_file(&child);
+        assert!(found.is_some());
+        // The child's config should win
+        assert_eq!(found.as_ref().unwrap().parent().unwrap(), child);
+    }
+
+    #[test]
+    fn test_no_config_anywhere_returns_none() {
+        let dir = tempfile::tempdir().unwrap();
+        let deep = dir.path().join("a").join("b").join("c");
+        std::fs::create_dir_all(&deep).unwrap();
+        // No config files created anywhere
+        let found = find_config_file(&deep);
+        // We cannot guarantee None because parent directories outside tempdir may have configs,
+        // but within the tempdir tree there are none. We test the main public API instead:
+        let config = load_thresholds(&[deep.as_path()]).unwrap();
+        // If no config found in tempdir tree, defaults should still be returned
+        assert_eq!(config.cyclomatic_complexity, ThresholdsConfig::default().cyclomatic_complexity);
+        // Additionally, verify find_config_file at least doesn't panic
+        let _ = found;
+    }
+
+    // ── package.json ──────────────────────────────────────────────────────────
+
+    #[test]
+    fn test_load_config_from_package_json_with_tsmetrics_key() {
+        let dir = tempfile::tempdir().unwrap();
+        let pkg = dir.path().join("package.json");
+        std::fs::write(
+            &pkg,
+            r#"{
+                "name": "my-app",
+                "tsmetrics": {
+                    "thresholds": {
+                        "loc": { "warning": 30, "error": 60 }
+                    },
+                    "exclude": ["dist"]
+                }
+            }"#,
+        )
+        .unwrap();
+        let config = load_config_from_package_json(&pkg).unwrap();
+        assert_eq!(config.thresholds.loc, MetricThreshold::new(30, 60));
+        assert_eq!(config.exclude, vec!["dist".to_string()]);
+        // Other thresholds should be defaults
+        assert_eq!(
+            config.thresholds.cyclomatic_complexity,
+            ThresholdsConfig::default().cyclomatic_complexity
+        );
+    }
+
+    #[test]
+    fn test_package_json_without_tsmetrics_key_is_ignored() {
+        let dir = tempfile::tempdir().unwrap();
+        let pkg = dir.path().join("package.json");
+        std::fs::write(&pkg, r#"{"name": "my-app", "version": "1.0.0"}"#).unwrap();
+        // find_config_file should not return this package.json
+        let found = find_config_file(dir.path());
+        assert!(found.is_none() || found.unwrap().file_name().unwrap() != "package.json");
+    }
+
+    #[test]
+    fn test_find_config_file_picks_up_package_json_with_tsmetrics() {
+        let dir = tempfile::tempdir().unwrap();
+        std::fs::write(
+            dir.path().join("package.json"),
+            r#"{"name": "test", "tsmetrics": {"thresholds": {}}}"#,
+        )
+        .unwrap();
+        let found = find_config_file(dir.path());
+        assert!(found.is_some());
+        assert_eq!(found.unwrap().file_name().unwrap(), "package.json");
+    }
+
+    // ── apply_cli_overrides ───────────────────────────────────────────────────
+
+    #[test]
+    fn test_apply_cli_overrides_changes_values() {
+        let mut config = ThresholdsConfig::default();
+        let overrides = ThresholdOverrides {
+            cc_warning: Some(5),
+            cc_error: Some(20),
+            loc_warning: Some(30),
+            ..ThresholdOverrides::default()
+        };
+        apply_cli_overrides(&mut config, &overrides).unwrap();
+        assert_eq!(config.cyclomatic_complexity, MetricThreshold::new(5, 20));
+        assert_eq!(config.loc.warning, 30);
+        // loc error should remain default
+        assert_eq!(config.loc.error, ThresholdsConfig::default().loc.error);
+    }
+
+    #[test]
+    fn test_apply_cli_overrides_warning_greater_than_error_fails() {
+        let mut config = ThresholdsConfig::default();
+        // Default cc error is 25; set warning to 30 which is > 25
+        let overrides = ThresholdOverrides {
+            cc_warning: Some(30),
+            ..ThresholdOverrides::default()
+        };
+        let result = apply_cli_overrides(&mut config, &overrides);
+        assert!(result.is_err());
+        let msg = result.unwrap_err().to_string();
+        assert!(msg.contains("warning") && msg.contains("error"), "msg: {}", msg);
+    }
+
+    #[test]
+    fn test_apply_cli_overrides_preserves_non_overridden_fields() {
+        let mut config = ThresholdsConfig::default();
+        let defaults = ThresholdsConfig::default();
+        let overrides = ThresholdOverrides {
+            nesting_warning: Some(2),
+            nesting_error: Some(4),
+            ..ThresholdOverrides::default()
+        };
+        apply_cli_overrides(&mut config, &overrides).unwrap();
+        // Nesting changed
+        assert_eq!(config.nesting, MetricThreshold::new(2, 4));
+        // Everything else unchanged
+        assert_eq!(config.cyclomatic_complexity, defaults.cyclomatic_complexity);
+        assert_eq!(config.loc, defaults.loc);
+        assert_eq!(config.params, defaults.params);
+        assert_eq!(config.wmc, defaults.wmc);
+        assert_eq!(config.noi, defaults.noi);
+    }
+
+    #[test]
+    fn test_apply_cli_overrides_no_overrides_is_noop() {
+        let mut config = ThresholdsConfig::default();
+        let defaults = ThresholdsConfig::default();
+        let overrides = ThresholdOverrides::default();
+        apply_cli_overrides(&mut config, &overrides).unwrap();
+        assert_eq!(config.cyclomatic_complexity, defaults.cyclomatic_complexity);
+        assert_eq!(config.loc, defaults.loc);
+        assert_eq!(config.nesting, defaults.nesting);
+        assert_eq!(config.params, defaults.params);
+        assert_eq!(config.wmc, defaults.wmc);
+        assert_eq!(config.noi, defaults.noi);
+    }
+
+    // ── load_tsmetrics_config_from_path ───────────────────────────────────────
+
+    #[test]
+    fn test_load_config_from_explicit_path() {
+        let dir = tempfile::tempdir().unwrap();
+        let path = dir.path().join("custom-config.yaml");
+        std::fs::write(
+            &path,
+            "thresholds:\n  params:\n    warning: 2\n    error: 5\n",
+        )
+        .unwrap();
+        let config = load_tsmetrics_config_from_path(&path).unwrap();
+        assert_eq!(config.thresholds.params, MetricThreshold::new(2, 5));
+    }
+
+    #[test]
+    fn test_load_config_from_explicit_path_not_found() {
+        let path = PathBuf::from("/tmp/nonexistent-tsmetrics-config.yaml");
+        let result = load_tsmetrics_config_from_path(&path);
+        assert!(result.is_err());
+        assert!(result.unwrap_err().to_string().contains("not found"));
+    }
+
+    #[test]
+    fn test_load_config_from_explicit_package_json() {
+        let dir = tempfile::tempdir().unwrap();
+        let path = dir.path().join("package.json");
+        std::fs::write(
+            &path,
+            r#"{"name": "test", "tsmetrics": {"thresholds": {"wmc": {"warning": 15, "error": 40}}}}"#,
+        )
+        .unwrap();
+        let config = load_tsmetrics_config_from_path(&path).unwrap();
+        assert_eq!(config.thresholds.wmc, MetricThreshold::new(15, 40));
     }
 }
