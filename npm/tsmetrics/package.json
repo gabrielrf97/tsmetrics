@@ -1,6 +1,6 @@
 {
   "name": "tsmetrics",
-  "version": "0.1.0",
+  "version": "0.3.0",
   "description": "Fast, tree-sitter-powered TypeScript static analyzer",
   "repository": {
     "type": "git",
