@@ -138,6 +138,8 @@ pub struct Violation {
     pub value: f64,
     pub threshold: f64,
     pub severity: Severity,
+    #[serde(skip_serializing_if = "std::ops::Not::not")]
+    pub suppressed: bool,
 }
 
 /// Combined configuration loaded from tsmetrics.yaml (thresholds + exclude patterns).
@@ -483,6 +485,7 @@ pub fn check_function_violations(
                 value: value as f64,
                 threshold: t as f64,
                 severity,
+                suppressed: false,
             });
         }
     }
@@ -500,6 +503,7 @@ pub fn check_function_violations(
             value: halstead_volume,
             threshold: t,
             severity,
+            suppressed: false,
         });
     }
     // Maintainability Index (lower is worse)
@@ -516,6 +520,7 @@ pub fn check_function_violations(
             value: maintainability_index,
             threshold: t,
             severity,
+            suppressed: false,
         });
     }
     violations
@@ -549,6 +554,7 @@ pub fn check_class_violations(
                 value: value as f64,
                 threshold: t as f64,
                 severity,
+                suppressed: false,
             });
         }
     }

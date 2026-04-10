@@ -48,11 +48,24 @@ fn parse_and_compute(source: &str, path: &str) -> FileMetrics {
 pub fn compute_file_metrics(root: Node, source: &[u8], path: &str) -> FileMetrics {
     let source_str = std::str::from_utf8(source).unwrap_or("");
 
+    // ── Check for module-level suppression ────────────────────────────────
+    let module_suppressed = crate::suppression::has_module_suppression(root, source);
+
     // ── Function metrics ────────────────────────────────────────────────────
-    let functions = function::extract_functions(root, source, path);
+    let mut functions = function::extract_functions(root, source, path);
+    if module_suppressed {
+        for f in &mut functions {
+            f.suppressed = true;
+        }
+    }
 
     // ── Class metrics ───────────────────────────────────────────────────────
     let mut classes = class::extract_classes(root, source, path);
+    if module_suppressed {
+        for c in &mut classes {
+            c.suppressed = true;
+        }
+    }
 
     // Enrich classes with additional OO metrics (computed at file level)
     let dit_results    = class::dit::compute_dit(root, source);

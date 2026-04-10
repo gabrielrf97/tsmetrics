@@ -4,6 +4,7 @@ pub mod output;
 pub mod parse;
 pub mod strategies;
 pub mod structs;
+pub mod suppression;
 pub mod thresholds;
 pub mod utils;
 
@@ -96,7 +97,7 @@ pub fn analyze(config: &Config) -> Result<AnalysisResult> {
     for fm in file_metrics {
         // Check violations for functions
         for func in &fm.functions {
-            let violations = check_function_violations(
+            let mut violations = check_function_violations(
                 &func.name,
                 &func.file,
                 func.line,
@@ -108,11 +109,16 @@ pub fn analyze(config: &Config) -> Result<AnalysisResult> {
                 func.halstead_volume,
                 &thresholds_config,
             );
+            if func.suppressed {
+                for v in &mut violations {
+                    v.suppressed = true;
+                }
+            }
             result.add_violations(violations);
         }
         // Check violations for classes
         for class in &fm.classes {
-            let violations = check_class_violations(
+            let mut violations = check_class_violations(
                 &class.name,
                 &class.file,
                 class.line,
@@ -120,6 +126,11 @@ pub fn analyze(config: &Config) -> Result<AnalysisResult> {
                 class.noi,
                 &thresholds_config,
             );
+            if class.suppressed {
+                for v in &mut violations {
+                    v.suppressed = true;
+                }
+            }
             result.add_violations(violations);
         }
         result.add_file(fm);

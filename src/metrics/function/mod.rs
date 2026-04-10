@@ -8,6 +8,7 @@ pub mod nesting;
 pub mod params;
 
 use crate::structs::FunctionMetrics;
+use crate::suppression::has_suppression_comment;
 use crate::metrics::react::{
     hook_complexity::compute_hook_complexity,
     effect_density::compute_effect_density,
@@ -88,6 +89,7 @@ fn collect_functions(node: Node, source: &[u8], file_path: &str, out: &mut Vec<F
             render_complexity: render_cx.total,
             prop_drilling_depth: prop_drill.max_prop_pass_depth,
             component_responsibility: crs.score,
+            suppressed: has_suppression_comment(node, source, "tsmetrics-disable-next-function"),
         };
         out.push(metrics);
     }

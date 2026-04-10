@@ -13,6 +13,7 @@ pub use tcc::{compute_class_tcc, ClassTcc};
 pub use woc::{compute_class_woc, ClassWoc};
 
 use crate::structs::ClassMetrics;
+use crate::suppression::has_suppression_comment;
 use tree_sitter::Node;
 use wmc::{compute_wmc, count_methods, extract_class_name};
 
@@ -40,6 +41,7 @@ fn collect_classes(node: Node, source: &[u8], file_path: &str, out: &mut Vec<Cla
             method_count: count_methods(node),
             wmc: compute_wmc(node, source),
             noi: noi::count_implemented_interfaces(node),
+            suppressed: has_suppression_comment(node, source, "tsmetrics-disable-next-class"),
             // Additional OO metrics are filled in by compute_file_metrics
             // after all per-file computations complete.
             ..crate::structs::ClassMetrics::default()

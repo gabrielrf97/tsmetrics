@@ -102,6 +102,10 @@ enum Commands {
         /// Override Halstead volume error threshold
         #[arg(long)]
         hv_error: Option<f64>,
+
+        /// Exit with code 1 if violations at this severity or above are found (for CI gating)
+        #[arg(long, value_enum)]
+        fail_on: Option<FailOn>,
     },
 }
 
@@ -111,6 +115,15 @@ enum Format {
     Json,
     Csv,
     Html,
+}
+
+/// Minimum violation severity that triggers a non-zero exit code.
+#[derive(ValueEnum, Clone, Debug)]
+enum FailOn {
+    /// Exit 1 if any warning or error violation exists
+    Warning,
+    /// Exit 1 only if an error-severity violation exists
+    Error,
 }
 
 fn main() -> Result<()> {
@@ -142,6 +155,7 @@ fn main() -> Result<()> {
             mi_error,
             hv_warning,
             hv_error,
+            fail_on,
         } => {
             let output_format = match format {
                 Format::Table => OutputFormat::Table,
@@ -210,6 +224,23 @@ fn main() -> Result<()> {
                     "Analysis completed in {:.3}s across {} file(s) using {} thread(s)",
                     result.elapsed_secs, result.total_files, result.num_threads
                 );
+            }
+
+            if let Some(ref level) = fail_on {
+                use tsmetrics::thresholds::Severity;
+                let has_violations = result.violations.iter().any(|v| !v.suppressed && match level {
+                    FailOn::Error => v.severity == Severity::Error,
+                    FailOn::Warning => {
+                        matches!(v.severity, Severity::Warning | Severity::Error)
+                    }
+                });
+                if has_violations {
+                    // Flush stdout to ensure all output (JSON, CSV, etc.) is written
+                    // before exiting with a non-zero code.
+                    use std::io::Write;
+                    let _ = std::io::stdout().flush();
+                    std::process::exit(1);
+                }
             }
         }
     }

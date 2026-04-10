@@ -26,6 +26,9 @@ pub struct FunctionMetrics {
     pub render_complexity: usize,
     pub prop_drilling_depth: usize,
     pub component_responsibility: f64,
+    /// Whether this function has a `tsmetrics-disable` suppression comment.
+    #[serde(skip)]
+    pub suppressed: bool,
 }
 
 impl Default for FunctionMetrics {
@@ -50,6 +53,7 @@ impl Default for FunctionMetrics {
             render_complexity: 0,
             prop_drilling_depth: 0,
             component_responsibility: 0.0,
+            suppressed: false,
         }
     }
 }
@@ -74,6 +78,9 @@ pub struct ClassMetrics {
     pub cbo: usize,
     pub rfc: usize,
     pub woc: f64,
+    /// Whether this class has a `tsmetrics-disable` suppression comment.
+    #[serde(skip)]
+    pub suppressed: bool,
 }
 
 impl Default for ClassMetrics {
@@ -93,6 +100,7 @@ impl Default for ClassMetrics {
             cbo: 0,
             rfc: 0,
             woc: 0.0,
+            suppressed: false,
         }
     }
 }

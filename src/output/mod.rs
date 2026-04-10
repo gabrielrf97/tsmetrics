@@ -238,11 +238,18 @@ fn render_table(result: &AnalysisResult) {
     println!("{ft}");
 
     // ── Violations ───────────────────────────────────────────────────────────
+    let suppressed_count = result.violations.iter().filter(|v| v.suppressed).count();
     if !result.violations.is_empty() {
-        println!(
-            "\nViolations ({} total):\n",
-            result.violations.len()
-        );
+        let summary = if suppressed_count > 0 {
+            format!(
+                "\nViolations ({} total, {} suppressed):\n",
+                result.violations.len(),
+                suppressed_count
+            )
+        } else {
+            format!("\nViolations ({} total):\n", result.violations.len())
+        };
+        println!("{summary}");
         let mut vtable = Table::new();
         vtable.load_preset(UTF8_FULL);
         vtable.set_header(vec![
@@ -255,9 +262,24 @@ fn render_table(result: &AnalysisResult) {
             Cell::new("Severity").fg(Color::Cyan),
         ]);
         for v in &result.violations {
-            let severity_cell = match v.severity {
-                Severity::Error => Cell::new("error").fg(Color::Red),
-                Severity::Warning => Cell::new("warning").fg(Color::Yellow),
+            let severity_label = if v.suppressed {
+                match v.severity {
+                    Severity::Error => "error [suppressed]",
+                    Severity::Warning => "warning [suppressed]",
+                }
+            } else {
+                match v.severity {
+                    Severity::Error => "error",
+                    Severity::Warning => "warning",
+                }
+            };
+            let severity_cell = if v.suppressed {
+                Cell::new(severity_label).fg(Color::DarkGrey)
+            } else {
+                match v.severity {
+                    Severity::Error => Cell::new(severity_label).fg(Color::Red),
+                    Severity::Warning => Cell::new(severity_label).fg(Color::Yellow),
+                }
             };
             vtable.add_row(vec![
                 Cell::new(&v.file),
@@ -791,6 +813,7 @@ mod tests {
                 value: 15.0,
                 threshold: 10.0,
                 severity: Severity::Error,
+                suppressed: false,
             },
             Violation {
                 file: "src/b.ts".to_string(),
@@ -800,6 +823,7 @@ mod tests {
                 value: 6.0,
                 threshold: 5.0,
                 severity: Severity::Warning,
+                suppressed: false,
             },
         ]);
         result
