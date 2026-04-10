@@ -103,6 +103,19 @@ enum Commands {
         #[arg(long)]
         hv_error: Option<f64>,
 
+        /// Override maintainability index (logic-only, JSX filtered) warning threshold
+        #[arg(long)]
+        mi_logic_warning: Option<f64>,
+        /// Override maintainability index (logic-only, JSX filtered) error threshold
+        #[arg(long)]
+        mi_logic_error: Option<f64>,
+        /// Override Halstead volume (logic-only, JSX filtered) warning threshold
+        #[arg(long)]
+        hv_logic_warning: Option<f64>,
+        /// Override Halstead volume (logic-only, JSX filtered) error threshold
+        #[arg(long)]
+        hv_logic_error: Option<f64>,
+
         /// Exit with code 1 if violations at this severity or above are found (for CI gating)
         #[arg(long, value_enum)]
         fail_on: Option<FailOn>,
@@ -155,6 +168,10 @@ fn main() -> Result<()> {
             mi_error,
             hv_warning,
             hv_error,
+            mi_logic_warning,
+            mi_logic_error,
+            hv_logic_warning,
+            hv_logic_error,
             fail_on,
         } => {
             let output_format = match format {
@@ -189,6 +206,10 @@ fn main() -> Result<()> {
                 mi_error,
                 hv_warning,
                 hv_error,
+                mi_logic_warning,
+                mi_logic_error,
+                hv_logic_warning,
+                hv_logic_error,
             };
 
             if verbose {

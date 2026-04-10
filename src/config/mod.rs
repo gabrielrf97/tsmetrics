@@ -19,6 +19,10 @@ pub struct ThresholdOverrides {
     pub mi_error: Option<f64>,
     pub hv_warning: Option<f64>,
     pub hv_error: Option<f64>,
+    pub mi_logic_warning: Option<f64>,
+    pub mi_logic_error: Option<f64>,
+    pub hv_logic_warning: Option<f64>,
+    pub hv_logic_error: Option<f64>,
 }
 
 #[derive(Debug, Clone)]

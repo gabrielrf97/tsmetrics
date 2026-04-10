@@ -107,6 +107,8 @@ pub fn analyze(config: &Config) -> Result<AnalysisResult> {
                 func.param_count,
                 func.maintainability_index,
                 func.halstead_volume,
+                func.maintainability_index_logic,
+                func.halstead_volume_logic,
                 &thresholds_config,
             );
             if func.suppressed {

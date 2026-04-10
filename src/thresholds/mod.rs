@@ -94,6 +94,8 @@ pub struct ThresholdsConfig {
     pub noi: MetricThreshold,
     pub maintainability_index: InvertedFloatMetricThreshold,
     pub halstead_volume: FloatMetricThreshold,
+    pub maintainability_index_logic: Option<InvertedFloatMetricThreshold>,
+    pub halstead_volume_logic: Option<FloatMetricThreshold>,
 }
 
 impl Default for ThresholdsConfig {
@@ -107,6 +109,8 @@ impl Default for ThresholdsConfig {
             noi: MetricThreshold::new(3, 5),
             maintainability_index: InvertedFloatMetricThreshold::new(40.0, 25.0),
             halstead_volume: FloatMetricThreshold::new(2000.0, 4000.0),
+            maintainability_index_logic: None,
+            halstead_volume_logic: None,
         }
     }
 }
@@ -174,6 +178,8 @@ struct PartialThresholdsConfig {
     noi: Option<PartialMetricThreshold>,
     maintainability_index: Option<PartialFloatMetricThreshold>,
     halstead_volume: Option<PartialFloatMetricThreshold>,
+    maintainability_index_logic: Option<PartialFloatMetricThreshold>,
+    halstead_volume_logic: Option<PartialFloatMetricThreshold>,
 }
 
 #[derive(Debug, Deserialize)]
@@ -312,6 +318,20 @@ fn load_config_from_package_json(path: &Path) -> anyhow::Result<TsmetricsConfig>
                 yaml.thresholds.halstead_volume,
                 defaults.halstead_volume,
             )?,
+            maintainability_index_logic: match yaml.thresholds.maintainability_index_logic {
+                Some(p) => Some(merge_inverted_float_threshold(
+                    Some(p),
+                    InvertedFloatMetricThreshold::new(40.0, 25.0),
+                )?),
+                None => None,
+            },
+            halstead_volume_logic: match yaml.thresholds.halstead_volume_logic {
+                Some(p) => Some(merge_float_threshold(
+                    Some(p),
+                    FloatMetricThreshold::new(2000.0, 4000.0),
+                )?),
+                None => None,
+            },
         },
         exclude: yaml.exclude,
         paths: yaml.paths,
@@ -407,6 +427,40 @@ pub fn apply_cli_overrides(
         );
     }
 
+    // Halstead Volume Logic (normal: warning <= error) — only when override provided
+    if overrides.hv_logic_warning.is_some() || overrides.hv_logic_error.is_some() {
+        let t = config.halstead_volume_logic.get_or_insert(FloatMetricThreshold::new(2000.0, 4000.0));
+        if let Some(v) = overrides.hv_logic_warning {
+            t.warning = v;
+        }
+        if let Some(v) = overrides.hv_logic_error {
+            t.error = v;
+        }
+        if t.warning > t.error {
+            anyhow::bail!(
+                "invalid halstead_volume_logic threshold after CLI overrides: warning ({}) > error ({})",
+                t.warning, t.error
+            );
+        }
+    }
+
+    // Maintainability Index Logic (inverted: warning >= error, lower is worse) — only when override provided
+    if overrides.mi_logic_warning.is_some() || overrides.mi_logic_error.is_some() {
+        let t = config.maintainability_index_logic.get_or_insert(InvertedFloatMetricThreshold::new(40.0, 25.0));
+        if let Some(v) = overrides.mi_logic_warning {
+            t.warning = v;
+        }
+        if let Some(v) = overrides.mi_logic_error {
+            t.error = v;
+        }
+        if t.warning < t.error {
+            anyhow::bail!(
+                "invalid maintainability_index_logic threshold after CLI overrides: warning ({}) < error ({}) — lower MI is worse",
+                t.warning, t.error
+            );
+        }
+    }
+
     Ok(())
 }
 
@@ -423,6 +477,8 @@ const KNOWN_THRESHOLD_KEYS: &[&str] = &[
     "noi",
     "maintainability_index",
     "halstead_volume",
+    "maintainability_index_logic",
+    "halstead_volume_logic",
 ];
 
 /// Emit warnings to stderr for unrecognized keys in a parsed YAML config.
@@ -572,6 +628,20 @@ fn load_tsmetrics_config_from_file(path: &Path) -> anyhow::Result<TsmetricsConfi
                 yaml.thresholds.halstead_volume,
                 defaults.halstead_volume,
             )?,
+            maintainability_index_logic: match yaml.thresholds.maintainability_index_logic {
+                Some(p) => Some(merge_inverted_float_threshold(
+                    Some(p),
+                    InvertedFloatMetricThreshold::new(40.0, 25.0),
+                )?),
+                None => None,
+            },
+            halstead_volume_logic: match yaml.thresholds.halstead_volume_logic {
+                Some(p) => Some(merge_float_threshold(
+                    Some(p),
+                    FloatMetricThreshold::new(2000.0, 4000.0),
+                )?),
+                None => None,
+            },
         },
         exclude: yaml.exclude,
         paths: yaml.paths,
@@ -595,6 +665,8 @@ pub fn check_function_violations(
     params: usize,
     maintainability_index: f64,
     halstead_volume: f64,
+    maintainability_index_logic: f64,
+    halstead_volume_logic: f64,
     config: &ThresholdsConfig,
 ) -> Vec<Violation> {
     let mut violations = Vec::new();
@@ -655,6 +727,44 @@ pub fn check_function_violations(
             severity,
             suppressed: false,
         });
+    }
+    // Halstead Volume Logic (higher is worse) — only when threshold configured
+    if let Some(ref threshold) = config.halstead_volume_logic {
+        if let Some(severity) = threshold.check(halstead_volume_logic) {
+            let t = match severity {
+                Severity::Error => threshold.error,
+                Severity::Warning => threshold.warning,
+            };
+            violations.push(Violation {
+                file: file.to_string(),
+                line,
+                entity: name.to_string(),
+                metric: "halstead_volume_logic".to_string(),
+                value: halstead_volume_logic,
+                threshold: t,
+                severity,
+                suppressed: false,
+            });
+        }
+    }
+    // Maintainability Index Logic (lower is worse) — only when threshold configured
+    if let Some(ref threshold) = config.maintainability_index_logic {
+        if let Some(severity) = threshold.check(maintainability_index_logic) {
+            let t = match severity {
+                Severity::Error => threshold.error,
+                Severity::Warning => threshold.warning,
+            };
+            violations.push(Violation {
+                file: file.to_string(),
+                line,
+                entity: name.to_string(),
+                metric: "maintainability_index_logic".to_string(),
+                value: maintainability_index_logic,
+                threshold: t,
+                severity,
+                suppressed: false,
+            });
+        }
     }
     violations
 }
@@ -821,14 +931,14 @@ mod tests {
     #[test]
     fn test_function_no_violations_below_thresholds() {
         let config = ThresholdsConfig::default();
-        let violations = check_function_violations("fn1", "a.ts", 1, 5, 20, 2, 3, 100.0, 0.0, &config);
+        let violations = check_function_violations("fn1", "a.ts", 1, 5, 20, 2, 3, 100.0, 0.0, 100.0, 0.0, &config);
         assert!(violations.is_empty());
     }
 
     #[test]
     fn test_function_cc_warning() {
         let config = ThresholdsConfig::default(); // warning=10
-        let violations = check_function_violations("fn1", "a.ts", 1, 10, 20, 2, 3, 100.0, 0.0, &config);
+        let violations = check_function_violations("fn1", "a.ts", 1, 10, 20, 2, 3, 100.0, 0.0, 100.0, 0.0, &config);
         assert_eq!(violations.len(), 1);
         assert_eq!(violations[0].metric, "cyclomatic_complexity");
         assert_eq!(violations[0].severity, Severity::Warning);
@@ -839,7 +949,7 @@ mod tests {
     #[test]
     fn test_function_cc_error() {
         let config = ThresholdsConfig::default(); // error=25
-        let violations = check_function_violations("fn1", "a.ts", 1, 25, 20, 2, 3, 100.0, 0.0, &config);
+        let violations = check_function_violations("fn1", "a.ts", 1, 25, 20, 2, 3, 100.0, 0.0, 100.0, 0.0, &config);
         assert_eq!(violations.len(), 1);
         assert_eq!(violations[0].severity, Severity::Error);
         assert_eq!(violations[0].threshold, 25.0);
@@ -849,14 +959,14 @@ mod tests {
     fn test_function_multiple_violations() {
         let config = ThresholdsConfig::default();
         // loc=100 (error), nesting=5 (error), params=7 (error), cc=10 (warning)
-        let violations = check_function_violations("fn1", "a.ts", 1, 10, 100, 5, 7, 100.0, 0.0, &config);
+        let violations = check_function_violations("fn1", "a.ts", 1, 10, 100, 5, 7, 100.0, 0.0, 100.0, 0.0, &config);
         assert_eq!(violations.len(), 4);
     }
 
     #[test]
     fn test_function_violation_fields_populated() {
         let config = ThresholdsConfig::default();
-        let violations = check_function_violations("myFunc", "src/foo.ts", 42, 30, 20, 2, 3, 100.0, 0.0, &config);
+        let violations = check_function_violations("myFunc", "src/foo.ts", 42, 30, 20, 2, 3, 100.0, 0.0, 100.0, 0.0, &config);
         assert_eq!(violations.len(), 1); // only cc=30 > warning=10
         let v = &violations[0];
         assert_eq!(v.entity, "myFunc");
@@ -865,6 +975,101 @@ mod tests {
         assert_eq!(v.metric, "cyclomatic_complexity");
         assert_eq!(v.value, 30.0);
         assert_eq!(v.severity, Severity::Error); // 30 >= 25
+    }
+
+    // ── maintainability_index_logic / halstead_volume_logic thresholds ─────────
+
+    #[test]
+    fn test_mi_logic_threshold_no_violation_when_none() {
+        let config = ThresholdsConfig::default(); // logic thresholds are None
+        let violations = check_function_violations("fn1", "a.ts", 1, 5, 20, 2, 3, 100.0, 0.0, 30.0, 0.0, &config);
+        // MI_logic=30 would be a violation if threshold were set, but it's None
+        assert!(violations.is_empty());
+    }
+
+    #[test]
+    fn test_mi_logic_threshold_fires_warning() {
+        let mut config = ThresholdsConfig::default();
+        config.maintainability_index_logic = Some(InvertedFloatMetricThreshold::new(40.0, 25.0));
+        let violations = check_function_violations("fn1", "a.tsx", 1, 5, 20, 2, 3, 100.0, 0.0, 35.0, 0.0, &config);
+        assert_eq!(violations.len(), 1);
+        assert_eq!(violations[0].metric, "maintainability_index_logic");
+        assert_eq!(violations[0].severity, Severity::Warning);
+        assert_eq!(violations[0].value, 35.0);
+    }
+
+    #[test]
+    fn test_mi_logic_threshold_fires_error() {
+        let mut config = ThresholdsConfig::default();
+        config.maintainability_index_logic = Some(InvertedFloatMetricThreshold::new(40.0, 25.0));
+        let violations = check_function_violations("fn1", "a.tsx", 1, 5, 20, 2, 3, 100.0, 0.0, 20.0, 0.0, &config);
+        assert_eq!(violations.len(), 1);
+        assert_eq!(violations[0].metric, "maintainability_index_logic");
+        assert_eq!(violations[0].severity, Severity::Error);
+    }
+
+    #[test]
+    fn test_hv_logic_threshold_fires_warning() {
+        let mut config = ThresholdsConfig::default();
+        config.halstead_volume_logic = Some(FloatMetricThreshold::new(2000.0, 4000.0));
+        let violations = check_function_violations("fn1", "a.tsx", 1, 5, 20, 2, 3, 100.0, 0.0, 100.0, 2500.0, &config);
+        assert_eq!(violations.len(), 1);
+        assert_eq!(violations[0].metric, "halstead_volume_logic");
+        assert_eq!(violations[0].severity, Severity::Warning);
+    }
+
+    #[test]
+    fn test_yaml_parses_mi_logic_threshold() {
+        let dir = tempfile::tempdir().unwrap();
+        let yaml_path = dir.path().join("tsmetrics.yaml");
+        std::fs::write(
+            &yaml_path,
+            "thresholds:\n  maintainability_index_logic:\n    warning: 50\n    error: 30\n",
+        )
+        .unwrap();
+        let config = load_thresholds(&[dir.path()]).unwrap();
+        let mi_logic = config.maintainability_index_logic.unwrap();
+        assert_eq!(mi_logic.warning, 50.0);
+        assert_eq!(mi_logic.error, 30.0);
+    }
+
+    #[test]
+    fn test_yaml_parses_hv_logic_threshold() {
+        let dir = tempfile::tempdir().unwrap();
+        let yaml_path = dir.path().join("tsmetrics.yaml");
+        std::fs::write(
+            &yaml_path,
+            "thresholds:\n  halstead_volume_logic:\n    warning: 1500\n    error: 3000\n",
+        )
+        .unwrap();
+        let config = load_thresholds(&[dir.path()]).unwrap();
+        let hv_logic = config.halstead_volume_logic.unwrap();
+        assert_eq!(hv_logic.warning, 1500.0);
+        assert_eq!(hv_logic.error, 3000.0);
+    }
+
+    #[test]
+    fn test_yaml_without_logic_thresholds_leaves_none() {
+        let dir = tempfile::tempdir().unwrap();
+        let yaml_path = dir.path().join("tsmetrics.yaml");
+        std::fs::write(&yaml_path, "thresholds:\n  loc:\n    warning: 30\n").unwrap();
+        let config = load_thresholds(&[dir.path()]).unwrap();
+        assert!(config.maintainability_index_logic.is_none());
+        assert!(config.halstead_volume_logic.is_none());
+    }
+
+    #[test]
+    fn test_mi_logic_inverted_threshold_rejects_invalid() {
+        let dir = tempfile::tempdir().unwrap();
+        let yaml_path = dir.path().join("tsmetrics.yaml");
+        // warning < error is invalid for inverted thresholds
+        std::fs::write(
+            &yaml_path,
+            "thresholds:\n  maintainability_index_logic:\n    warning: 20\n    error: 50\n",
+        )
+        .unwrap();
+        let result = load_thresholds(&[dir.path()]);
+        assert!(result.is_err());
     }
 
     // ── check_class_violations ─────────────────────────────────────────────────
