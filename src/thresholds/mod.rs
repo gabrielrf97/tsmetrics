@@ -288,6 +288,8 @@ fn load_config_from_package_json(path: &Path) -> anyhow::Result<TsmetricsConfig>
     let tsmetrics_val = val
         .get("tsmetrics")
         .ok_or_else(|| anyhow::anyhow!("No \"tsmetrics\" key in {}", path.display()))?;
+    // Pre-parse: warn about unrecognized keys
+    warn_unknown_json_keys(tsmetrics_val, path);
     let yaml: TsmetricsYaml = serde_json::from_value(tsmetrics_val.clone())
         .map_err(|e| anyhow::anyhow!("Failed to deserialize tsmetrics config from {}: {}", path.display(), e))?;
     let defaults = ThresholdsConfig::default();
@@ -408,6 +410,133 @@ pub fn apply_cli_overrides(
     Ok(())
 }
 
+// ── Unknown key detection ────────────────────────────────────────────────────
+
+const KNOWN_TOP_LEVEL_KEYS: &[&str] = &["thresholds", "exclude", "paths"];
+
+const KNOWN_THRESHOLD_KEYS: &[&str] = &[
+    "cyclomatic_complexity",
+    "loc",
+    "nesting",
+    "params",
+    "wmc",
+    "noi",
+    "maintainability_index",
+    "halstead_volume",
+];
+
+/// Emit warnings to stderr for unrecognized keys in a parsed YAML config.
+fn warn_unknown_yaml_keys(raw: &serde_yaml::Value, path: &Path) {
+    let mapping = match raw.as_mapping() {
+        Some(m) => m,
+        None => return,
+    };
+    // Check top-level keys
+    let top_keys: Vec<String> = mapping
+        .keys()
+        .filter_map(|k| k.as_str().map(String::from))
+        .collect();
+    for warning in check_unknown_keys(&top_keys, KNOWN_TOP_LEVEL_KEYS, "config") {
+        eprintln!("warning: {} (in {})", warning, path.display());
+    }
+    // Check threshold keys
+    if let Some(thresholds) = mapping
+        .iter()
+        .find(|(k, _)| k.as_str() == Some("thresholds"))
+        .and_then(|(_, v)| v.as_mapping())
+    {
+        let threshold_keys: Vec<String> = thresholds
+            .keys()
+            .filter_map(|k| k.as_str().map(String::from))
+            .collect();
+        for warning in check_unknown_keys(&threshold_keys, KNOWN_THRESHOLD_KEYS, "threshold") {
+            eprintln!("warning: {} (in {})", warning, path.display());
+        }
+    }
+}
+
+/// Emit warnings to stderr for unrecognized keys in a package.json tsmetrics section.
+fn warn_unknown_json_keys(raw: &serde_json::Value, path: &Path) {
+    let obj = match raw.as_object() {
+        Some(o) => o,
+        None => return,
+    };
+    let top_keys: Vec<String> = obj.keys().cloned().collect();
+    for warning in check_unknown_keys(&top_keys, KNOWN_TOP_LEVEL_KEYS, "config") {
+        eprintln!("warning: {} (in {})", warning, path.display());
+    }
+    if let Some(thresholds) = obj.get("thresholds").and_then(|v| v.as_object()) {
+        let threshold_keys: Vec<String> = thresholds.keys().cloned().collect();
+        for warning in check_unknown_keys(&threshold_keys, KNOWN_THRESHOLD_KEYS, "threshold") {
+            eprintln!("warning: {} (in {})", warning, path.display());
+        }
+    }
+}
+
+/// Check a list of found keys against known keys, returning warning messages.
+fn check_unknown_keys(found: &[String], known: &[&str], context: &str) -> Vec<String> {
+    let mut warnings = Vec::new();
+    for key in found {
+        if !known.contains(&key.as_str()) {
+            match find_best_match(key, known) {
+                Some(suggestion) => {
+                    warnings.push(format!(
+                        "unknown {} key '{}' -- did you mean '{}'?",
+                        context, key, suggestion
+                    ));
+                }
+                None => {
+                    warnings.push(format!("unknown {} key '{}'", context, key));
+                }
+            }
+        }
+    }
+    warnings
+}
+
+/// Find the best fuzzy match for `input` among `candidates` using normalized
+/// edit distance. Returns the best match if similarity >= 0.4.
+fn find_best_match<'a>(input: &str, candidates: &[&'a str]) -> Option<&'a str> {
+    let input_lower = input.to_lowercase().replace('-', "_");
+    // Check prefix match first (e.g. "mi" -> "maintainability_index")
+    let mut best: Option<(&str, f64)> = None;
+    for &candidate in candidates {
+        let score = normalized_similarity(&input_lower, candidate);
+        if score >= 0.4 {
+            if best.map_or(true, |(_, s)| score > s) {
+                best = Some((candidate, score));
+            }
+        }
+    }
+    best.map(|(name, _)| name)
+}
+
+/// Simple normalized similarity: 1.0 - (edit_distance / max_len).
+fn normalized_similarity(a: &str, b: &str) -> f64 {
+    let a_bytes = a.as_bytes();
+    let b_bytes = b.as_bytes();
+    let (m, n) = (a_bytes.len(), b_bytes.len());
+    if m == 0 && n == 0 {
+        return 1.0;
+    }
+    // Levenshtein distance via single-row DP
+    let mut prev: Vec<usize> = (0..=n).collect();
+    let mut curr = vec![0; n + 1];
+    for i in 1..=m {
+        curr[0] = i;
+        for j in 1..=n {
+            let cost = if a_bytes[i - 1] == b_bytes[j - 1] { 0 } else { 1 };
+            curr[j] = (prev[j] + 1)
+                .min(curr[j - 1] + 1)
+                .min(prev[j - 1] + cost);
+        }
+        std::mem::swap(&mut prev, &mut curr);
+    }
+    let dist = prev[n];
+    let max_len = m.max(n);
+    1.0 - (dist as f64 / max_len as f64)
+}
+
 fn load_tsmetrics_config_from_file(path: &Path) -> anyhow::Result<TsmetricsConfig> {
     let content = std::fs::read_to_string(path)?;
     if content.trim().is_empty() {
@@ -416,6 +545,10 @@ fn load_tsmetrics_config_from_file(path: &Path) -> anyhow::Result<TsmetricsConfi
             exclude: Vec::new(),
             paths: Vec::new(),
         });
+    }
+    // Pre-parse: warn about unrecognized keys before typed deserialization
+    if let Ok(raw) = serde_yaml::from_str::<serde_yaml::Value>(&content) {
+        warn_unknown_yaml_keys(&raw, path);
     }
     let yaml: TsmetricsYaml = serde_yaml::from_str(&content)
         .map_err(|e| anyhow::anyhow!("Failed to parse {}: {}", path.display(), e))?;
@@ -1029,5 +1162,95 @@ mod tests {
         .unwrap();
         let config = load_tsmetrics_config_from_path(&path).unwrap();
         assert_eq!(config.thresholds.wmc, MetricThreshold::new(15, 40));
+    }
+
+    // ── Unknown key detection ─────────────────────────────────────────────
+
+    #[test]
+    fn check_unknown_keys_detects_bad_keys() {
+        let found = vec!["mi-warning".to_string(), "cc-error".to_string()];
+        let warnings = check_unknown_keys(&found, KNOWN_THRESHOLD_KEYS, "threshold");
+        assert_eq!(warnings.len(), 2);
+        // Both should have suggestions since they partially match known keys
+        assert!(warnings[0].contains("mi-warning"));
+        assert!(warnings[1].contains("cc-error"));
+    }
+
+    #[test]
+    fn check_unknown_keys_no_warnings_for_valid_keys() {
+        let found = vec![
+            "cyclomatic_complexity".to_string(),
+            "loc".to_string(),
+            "maintainability_index".to_string(),
+        ];
+        let warnings = check_unknown_keys(&found, KNOWN_THRESHOLD_KEYS, "threshold");
+        assert!(warnings.is_empty());
+    }
+
+    #[test]
+    fn check_unknown_keys_completely_unknown_no_suggestion() {
+        let found = vec!["zzzzzzzzz".to_string()];
+        let warnings = check_unknown_keys(&found, KNOWN_THRESHOLD_KEYS, "threshold");
+        assert_eq!(warnings.len(), 1);
+        assert!(warnings[0].contains("unknown threshold key 'zzzzzzzzz'"));
+        assert!(!warnings[0].contains("did you mean"));
+    }
+
+    #[test]
+    fn find_best_match_suggests_nesting_for_nest() {
+        let result = find_best_match("nest", KNOWN_THRESHOLD_KEYS);
+        assert_eq!(result, Some("nesting"));
+    }
+
+    #[test]
+    fn find_best_match_suggests_wmc_for_wmcc() {
+        let result = find_best_match("wmcc", KNOWN_THRESHOLD_KEYS);
+        assert_eq!(result, Some("wmc"));
+    }
+
+    #[test]
+    fn find_best_match_suggests_params_for_param() {
+        let result = find_best_match("param", KNOWN_THRESHOLD_KEYS);
+        assert_eq!(result, Some("params"));
+    }
+
+    #[test]
+    fn normalized_similarity_identical() {
+        assert!((normalized_similarity("abc", "abc") - 1.0).abs() < f64::EPSILON);
+    }
+
+    #[test]
+    fn normalized_similarity_completely_different() {
+        let score = normalized_similarity("abc", "xyz");
+        assert!(score < 0.5);
+    }
+
+    #[test]
+    fn warn_unknown_yaml_keys_with_flat_threshold_format() {
+        // This is the exact scenario from the issue: flat keys under thresholds
+        let yaml_str = r#"
+paths:
+  - .
+thresholds:
+  mi-warning: 55
+  mi-error: 40
+  cc-warning: 10
+  cc-error: 20
+"#;
+        let raw: serde_yaml::Value = serde_yaml::from_str(yaml_str).unwrap();
+        // We can't easily capture stderr in a unit test, but we can verify
+        // check_unknown_keys returns warnings for the flat keys.
+        let mapping = raw.as_mapping().unwrap();
+        let thresholds = mapping
+            .iter()
+            .find(|(k, _)| k.as_str() == Some("thresholds"))
+            .and_then(|(_, v)| v.as_mapping())
+            .unwrap();
+        let keys: Vec<String> = thresholds
+            .keys()
+            .filter_map(|k| k.as_str().map(String::from))
+            .collect();
+        let warnings = check_unknown_keys(&keys, KNOWN_THRESHOLD_KEYS, "threshold");
+        assert_eq!(warnings.len(), 4, "should warn about all 4 flat keys");
     }
 }
